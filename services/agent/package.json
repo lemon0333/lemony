@@ -1,0 +1,7 @@
+{
+  "name": "@lemony/agent",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": { "dev": "node --experimental-strip-types src/index.ts" }
+}

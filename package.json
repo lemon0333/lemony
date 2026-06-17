@@ -1,0 +1,12 @@
+{
+  "name": "lemony",
+  "private": true,
+  "version": "0.0.1",
+  "description": "비전공자도 진짜로 만드는 AI 웹사이트 빌더 — Quarkify 신뢰성 엔진 기반",
+  "type": "module",
+  "workspaces": ["apps/*", "services/*", "packages/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "echo 'TODO: apps/builder + services/agent 동시 실행 (concurrently 등)'"
+  }
+}
