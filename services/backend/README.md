@@ -2,6 +2,11 @@
 
 lemony 플랫폼의 백엔드 — API·인증·사이트·프리뷰. **프론트는 React, 백은 Kotlin** 구조.
 
+## 패키지 레이어링 (flowstock 컨벤션 참조)
+`dev.lemony.{domain.<기능>.{controller,service}, global.{response,config,security}, infra.ai}` — flowstock-backend(`com.flowstock.*`)와 동일 패턴.
+- `domain/site/controller/SiteController` · `global/response/ApiResponse` · `infra/ai/AgentService`
+- Dockerfile(temurin 21-jre, prebuilt jar) · infra(`../../infra`: k8s/terraform/scripts/docs)도 flowstock 참조.
+
 ## 역할 분담
 - **Kotlin/Spring (여기)**: API, 인증(추후 OAuth2 GitHub/Google), 사이트 영속/목록, 프리뷰 서빙, orchestration.
 - **Node 에이전트 도구**: `claude` CLI(키 없이 LLM) + `Quarkify`(코드 토폴로지). Kotlin 이 `ProcessBuilder` 로 호출(`AgentService`).

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ingestImages, domainPromptBlock, saveProfile } from './domain.ts';
+import { ingestAssets, retrieve, assetSpecBlock, imagePaths, saveAssets } from './domain.ts';
 
 // 웹사이트 생성 엔진 — 비전공자의 한국어 요청 → 완성된 단일 파일 사이트(index.html).
 // LLM 백엔드: 로그인된 claude CLI(헤드리스). 별도 API 키 불필요.
@@ -58,6 +58,35 @@ export function createSite(prompt: string, baseDir: string, domainBlock = ''): {
   return { id, dir, file };
 }
 
+// ── 멀티모달 RAG 생성: 추출 사양 + 원본 이미지(ground-truth) 를 함께 넣어 생성 ──
+function runClaudeMultimodal(prompt: string): string {
+  // 이미지 ground-truth 를 위해 Read 만 허용, 파일 쓰기/실행은 금지(안내문 뱉기 방지)
+  return execFileSync('claude', ['-p', prompt, '--disallowedTools', 'Write,Edit,Bash,Glob,Grep', '--output-format', 'text'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+}
+
+export function generateFromAssets(prompt: string, assets: any[]): string {
+  const block = assetSpecBlock(assets);
+  const imgs = imagePaths(assets);
+  const groundTruth = imgs.length
+    ? `\n원본 이미지(시각적 ground-truth — 사양보다 항상 우선). Read 도구로 다음 파일을 열어 색/타이포/레이아웃/카피를 직접 확인해 반영하라:\n${imgs.map((p) => '- ' + p).join('\n')}\n`
+    : '';
+  const PRINCIPLES = `\n[원칙] 자산의 색·타이포·레이아웃·카피를 충실히 재현(임의 AI 기본스타일 금지). 이미지 속 카피는 그대로 사용. 자산이 여러 개면 purpose 로 섹션 통합. 비동기 생성이므로 멈춰 되묻지 말고 일단 동작하는 결과를 내라.`;
+  const full = `${GEN_SYSTEM}${PRINCIPLES}${block}${groundTruth}\n사용자 요청:\n${prompt}\n\nHTML 전문만 출력(파일 쓰지 말 것).`;
+  let html = stripFence(runClaudeMultimodal(full));
+  if (!/<!doctype|<html/i.test(html)) html = `<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>\n${html}\n</body></html>`;
+  return html;
+}
+
+export function createSiteFromAssets(prompt: string, baseDir: string, assets: any[]): { id: string; dir: string; file: string } {
+  const id = 'site_' + Date.now().toString(36);
+  const dir = path.join(baseDir, id);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, 'index.html');
+  fs.writeFileSync(file, generateFromAssets(prompt, assets), 'utf8');
+  return { id, dir, file };
+}
+
 // CLI:
 //   생성: node --experimental-strip-types src/generate.ts "<사이트 설명>" [outDir]
 //   수정: node --experimental-strip-types src/generate.ts --edit <siteDir> "<수정 요청>"
@@ -77,18 +106,18 @@ if (invokedDirect) {
     console.log(`✅ 수정 완료: ${file} (${(before.length / 1024).toFixed(1)}→${(after.length / 1024).toFixed(1)} KB)`);
     console.log(`   diff: diff "${file}.prev" "${file}"  |  열기: open "${file}"`);
   } else if (process.argv[2] === '--domain') {
-    // 이미지 RAG: --domain <img1,img2,...> "<사이트 설명>" [outDir]
-    const imgs = (process.argv[3] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    // 멀티모달 RAG: --domain <img1,doc1,...> "<사이트 설명>" [outDir]
+    const paths = (process.argv[3] || '').split(',').map((s) => s.trim()).filter(Boolean);
     const prompt = process.argv[4];
-    if (!imgs.length || !prompt) { console.error('사용법: ... --domain <img1,img2> "<사이트 설명>" [outDir]'); process.exit(1); }
-    console.log(`🖼  도메인 이미지 분석 중 (${imgs.length}장, claude vision)...`);
-    const profile = ingestImages(imgs);
-    console.log(`   도메인: ${profile.domain}`);
-    console.log(`   팔레트: ${profile.palette.join(', ')}  | 스타일: ${profile.style.join(', ')}`);
+    if (!paths.length || !prompt) { console.error('사용법: ... --domain <img1,doc1,...> "<사이트 설명>" [outDir]'); process.exit(1); }
+    console.log(`🖼  자산 분석/인덱싱 중 (${paths.length}개, 멀티모달 RAG)...`);
+    const assets = ingestAssets(paths);
+    for (const a of assets) console.log(`   [${a.type}] ${a.purpose || ''} — ${a.summary}`);
+    const relevant = retrieve(assets, prompt);
     const base = process.argv[5] ? path.resolve(process.argv[5]) : path.join(process.cwd(), 'lemony-sites');
-    console.log('🍋 도메인 그라운딩 사이트 생성 중...');
-    const site = createSite(prompt, base, domainPromptBlock(profile));
-    saveProfile(profile, path.join(site.dir, 'domain_profile.json'));
+    console.log(`🍋 자산 그라운딩 생성 중 (사양 + 원본이미지 ${relevant.filter((a) => a.type === 'image').length}장)...`);
+    const site = createSiteFromAssets(prompt, base, relevant);
+    saveAssets(assets, path.join(site.dir, 'assets.json'));
     console.log(`✅ 생성 완료: ${site.file} (${(fs.statSync(site.file).size / 1024).toFixed(1)} KB)`);
     console.log(`   브라우저로 열기: open "${site.file}"`);
   } else {

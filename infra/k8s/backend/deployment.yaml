@@ -1,0 +1,17 @@
+# lemony 백엔드(Kotlin/Spring) 배포 — flowstock-infra/k8s/backend 참조
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: lemony-backend, namespace: lemony }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: lemony-backend } }
+  template:
+    metadata: { labels: { app: lemony-backend } }
+    spec:
+      containers:
+        - name: backend
+          image: lemony-backend:latest
+          ports: [{ containerPort: 8787 }]
+          env:
+            - { name: LEMONY_SITES, value: /data/sites }
+            # TODO: GITHUB_/GOOGLE_CLIENT_ID,SECRET (OAuth) 시크릿 주입

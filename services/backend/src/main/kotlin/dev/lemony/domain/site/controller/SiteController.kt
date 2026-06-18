@@ -1,7 +1,8 @@
-package dev.lemony.web
+package dev.lemony.domain.site.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import dev.lemony.agent.AgentService
+import dev.lemony.infra.ai.AgentService
+import dev.lemony.global.response.ApiResponse
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -16,31 +17,31 @@ class SiteController(private val agent: AgentService, private val om: ObjectMapp
     data class EditReq(val id: String?, val prompt: String?)
 
     @PostMapping("/api/create")
-    fun create(@RequestBody req: CreateReq): ResponseEntity<Any> {
-        val prompt = req.prompt ?: return ResponseEntity.badRequest().body(mapOf("error" to "prompt 필요"))
+    fun create(@RequestBody req: CreateReq): ResponseEntity<ApiResponse<*>> {
+        val prompt = req.prompt ?: return ResponseEntity.badRequest().body(ApiResponse.error("BAD_REQUEST", "prompt 필요"))
         // TODO: 인증 연동 시 owner = 현재 사용자. 지금은 데모.
         val site = agent.createSite(prompt, owner = "demo")
-        return ResponseEntity.ok(mapOf("id" to site.id, "previewUrl" to "/preview/${site.id}/"))
+        return ResponseEntity.ok(ApiResponse.success(mapOf("id" to site.id, "previewUrl" to "/preview/${site.id}/")))
     }
 
     @PostMapping("/api/edit")
-    fun edit(@RequestBody req: EditReq): ResponseEntity<Any> {
-        val id = req.id ?: return ResponseEntity.badRequest().body(mapOf("error" to "id 필요"))
+    fun edit(@RequestBody req: EditReq): ResponseEntity<ApiResponse<*>> {
+        val id = req.id ?: return ResponseEntity.badRequest().body(ApiResponse.error("BAD_REQUEST", "id 필요"))
         val file = File(File(agent.sitesDir(), id), "index.html")
-        if (!file.exists()) return ResponseEntity.status(404).body(mapOf("error" to "사이트 없음"))
+        if (!file.exists()) return ResponseEntity.status(404).body(ApiResponse.error("NOT_FOUND", "사이트 없음"))
         file.writeText(agent.editHtml(file.readText(), req.prompt ?: ""))
-        return ResponseEntity.ok(mapOf("id" to id, "previewUrl" to "/preview/$id/"))
+        return ResponseEntity.ok(ApiResponse.success(mapOf("id" to id, "previewUrl" to "/preview/$id/")))
     }
 
     @GetMapping("/api/sites")
-    fun sites(): Map<String, Any> {
+    fun sites(): ApiResponse<*> {
         val out = agent.sitesDir().listFiles { f -> f.isDirectory }?.mapNotNull { d ->
             val meta = File(d, "meta.json")
             if (!meta.exists()) return@mapNotNull null
             val m = om.readValue(meta, Map::class.java)
             mapOf("id" to d.name, "name" to m["name"], "previewUrl" to "/preview/${d.name}/")
         } ?: emptyList()
-        return mapOf("sites" to out)
+        return ApiResponse.success(mapOf("sites" to out))
     }
 
     // 생성된 사이트 정적 프리뷰 (단일 HTML → index.html). 경로탈출 차단.
