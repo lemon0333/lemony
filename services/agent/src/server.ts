@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { handleEdit } from './edit-loop.ts';
 import { createSite, editHtml } from './generate.ts';
+import { startOAuth, handleCallback, demoLogin, logout, userFromReq, authStatus } from './auth.ts';
 
 // lemony 에이전트 HTTP 서버.
 //  POST /create   {prompt}            → 자연어로 새 사이트 생성 → {id, previewUrl}
@@ -34,6 +35,25 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && url === '/health') {
     return json(res, 200, { ok: true, sites: SITES });
+  }
+
+  // ─── 인증(소셜 로그인) ───
+  if (req.method === 'GET' && url === '/auth/me') {
+    return json(res, 200, { user: userFromReq(req), providers: authStatus() });
+  }
+  if (req.method === 'GET' && (url === '/auth/github' || url === '/auth/google')) {
+    return startOAuth(url.split('/')[2], res);
+  }
+  if (req.method === 'GET' && url.startsWith('/auth/') && url.includes('/callback')) {
+    const provider = url.split('/')[2];
+    return handleCallback(provider, new URL(url, 'http://x').searchParams, res);
+  }
+  if (req.method === 'POST' && url === '/auth/demo') {
+    try { const { name } = await readBody(req); const user = demoLogin(name, res); return json(res, 200, { user }); }
+    catch { const user = demoLogin('', res); return json(res, 200, { user }); }
+  }
+  if (req.method === 'POST' && url === '/auth/logout') {
+    logout(req, res); return json(res, 200, { ok: true });
   }
 
   // 빌더 UI (Lovable 스타일) — 서버가 UI 와 API 를 함께 서빙

@@ -63,9 +63,36 @@
   .dot { width:10px; height:10px; border-radius:50%; }
   .spin { width:16px; height:16px; border:2px solid #444; border-top-color:#bdf24a; border-radius:50%; animation:s .8s linear infinite; display:inline-block; vertical-align:-3px; }
   @keyframes s { to { transform:rotate(360deg); } }
+
+  /* 로그인 오버레이 */
+  #login { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(70% 60% at 50% 120%, #ff3d8b 0%, transparent 55%), radial-gradient(60% 50% at 50% 110%, #8a5bff 0%, transparent 50%), #0b0b0d; }
+  #login .card { width:340px; background:rgba(20,20,24,.82); border:1px solid var(--line); border-radius:20px; padding:30px 26px; text-align:center; backdrop-filter:blur(10px); box-shadow:0 30px 80px rgba(0,0,0,.5); }
+  #login h2 { font-size:22px; margin-bottom:6px; }
+  #login p { color:var(--muted); font-size:13px; margin-bottom:18px; }
+  .lbtn { width:100%; padding:12px; border-radius:11px; border:1px solid #303035; background:#1d1d20; color:#f2f2f4; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .lbtn:hover { border-color:#4a4a52; }
+  .lbtn.gh { background:#1f2328; }
+  .lbtn.gg { background:#fff; color:#1a1a1a; border-color:#fff; }
+  .lbtn.demo { background:transparent; color:#bdf24a; border-color:#3a4a22; }
+  .lbtn:disabled { opacity:.45; cursor:not-allowed; }
+  #login .or { color:#55555c; font-size:12px; margin:6px 0 12px; }
+  #login .note { color:#7a7a80; font-size:11px; margin-top:8px; min-height:14px; }
 </style>
 </head>
 <body>
+<div id="login">
+  <div class="card">
+    <div class="logo" style="width:40px;height:40px;border-radius:11px;margin:0 auto 14px"></div>
+    <h2>lemony 시작하기 🍋</h2>
+    <p>로그인하고 한 줄로 웹사이트를 만들어보세요.</p>
+    <button class="lbtn gh" id="loginGithub">GitHub로 계속하기</button>
+    <button class="lbtn gg" id="loginGoogle">Google로 계속하기</button>
+    <div class="or">또는</div>
+    <button class="lbtn demo" id="loginDemo">데모로 둘러보기</button>
+    <p class="note" id="loginNote"></p>
+  </div>
+</div>
 <div class="app">
   <nav class="side">
     <div class="logo"></div>
@@ -165,6 +192,38 @@ async function edit(){
     refresh(d.previewUrl);
   } catch(e){ working.className='msg ai'; working.textContent='실패: '+e; }
 }
+
+// ── 인증(소셜 로그인) ──
+const loginEl = $('#login');
+function onLoggedIn(user){
+  loginEl.style.display='none';
+  const first = (user.name||'').trim().split(' ')[0] || user.name || '';
+  $('#headline').textContent = `무엇을 만들까요, ${first}?`;
+  const av = document.querySelector('.avatar');
+  av.textContent = (user.name||'?').slice(0,1).toUpperCase();
+  av.title = `${user.name} (${user.provider}) · 클릭하면 로그아웃`;
+  av.style.cursor = 'pointer';
+  av.onclick = async () => { if(confirm('로그아웃할까요?')){ await fetch(API+'/auth/logout',{method:'POST'}); location.href='/'; } };
+}
+async function initAuth(){
+  const err = new URLSearchParams(location.search).get('login_error');
+  if(err) $('#loginNote').textContent = '로그인 실패: ' + err.replace(/_/g,' ');
+  try {
+    const d = await (await fetch(API+'/auth/me')).json();
+    const gh=$('#loginGithub'), gg=$('#loginGoogle');
+    if(!d.providers.github){ gh.disabled=true; gh.title='GITHUB_CLIENT_ID/SECRET 미설정 — 데모로 둘러보세요'; }
+    if(!d.providers.google){ gg.disabled=true; gg.title='GOOGLE_CLIENT_ID/SECRET 미설정 — 데모로 둘러보세요'; }
+    if(d.user) onLoggedIn(d.user);
+  } catch(e){ $('#loginNote').textContent='에이전트 서버에 연결할 수 없습니다.'; }
+}
+$('#loginGithub').onclick = () => { location.href = API+'/auth/github'; };
+$('#loginGoogle').onclick = () => { location.href = API+'/auth/google'; };
+$('#loginDemo').onclick = async () => {
+  const name = prompt('이름을 입력하세요 (데모)', '게스트') || '게스트';
+  await fetch(API+'/auth/demo', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({name})});
+  location.href = '/';
+};
+initAuth();
 </script>
 </body>
 </html>
