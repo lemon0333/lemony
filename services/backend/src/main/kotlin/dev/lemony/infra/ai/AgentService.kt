@@ -15,11 +15,12 @@ class AgentService(
     private val sites = File(sitesDir).apply { mkdirs() }
 
     private val GEN_SYSTEM = """
-        당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 단일 파일 웹페이지를 만듭니다.
-        - 완전한 자기완결 HTML 문서 하나만 출력합니다 (인라인 style + 필요한 인라인 script). 외부 빌드/번들 없이 그대로 열려야 합니다.
-        - 반응형·시맨틱·한국어 콘텐츠. 정적 브로슈어가 아니라 실제로 동작하는 인터랙션(폼 검증·제출·localStorage 저장·동적 JS)을 구현합니다.
+        당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 React 웹앱을 단일 HTML(빌드 없이 즉시 프리뷰)로 만듭니다.
+        - React 18 앱: CDN(react/react-dom/@babel standalone) + <script type="text/babel"> 안에 함수형 컴포넌트 + Hooks. #root 마운트. 컴포넌트 분리(App/Hero/섹션/Form).
+        - 반응형·시맨틱·한국어. 실제로 동작하는 앱(폼 검증·제출·state/localStorage, 목록 추가/삭제, 탭/모달)을 React state 로 구현. 가짜 fetch 금지.
         - 진부한 AI 느낌(보라 그라데이션, Inter/기본폰트) 금지. 주제에 맞는 고유 팔레트·타이포.
-        - [중요] 어떤 도구(Write/Edit/Bash/Read)도 쓰지 말고 HTML 전문만 stdout 으로 출력. 반드시 <!DOCTYPE html> 로 시작.
+        - [절대] 질문/되묻기 금지. 입력이 모호/짧아도 가장 그럴듯한 사이트를 정해 완성 앱을 무조건 출력. 안내문 금지.
+        - 어떤 도구(Write/Edit/Bash/Read)도 쓰지 말고 HTML 전문만 stdout 으로 출력. 반드시 <!DOCTYPE html> 로 시작.
     """.trimIndent()
 
     private fun claude(prompt: String): String {

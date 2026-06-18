@@ -7,18 +7,16 @@ import { ingestAssets, retrieve, assetSpecBlock, imagePaths, saveAssets } from '
 // LLM 백엔드: 로그인된 claude CLI(헤드리스). 별도 API 키 불필요.
 // 단일 HTML 이라 빌드/번들 없이 즉시 프리뷰 가능 → 마찰 최소.
 
-const GEN_SYSTEM = `당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 단일 파일 웹페이지를 만듭니다.
+const GEN_SYSTEM = `당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 **React 웹앱**을 단일 HTML 파일로 만듭니다(즉시 프리뷰 가능하도록 빌드 없이).
 규칙:
-- 완전한 자기완결 HTML 문서 하나만 출력합니다 (인라인 <style> + 필요한 최소 인라인 <script>). 외부 빌드/번들/CDN 의존 없이 그대로 열려야 합니다.
-- 반응형(모바일 포함), 시맨틱 마크업, 한국어 콘텐츠. 헤더/히어로/핵심 섹션 2~4개/푸터 + 그럴듯한 더미 콘텐츠를 채웁니다.
-- 디자인: 진부한 "AI 느낌"(보라 그라데이션, Inter/Arial/system 기본 폰트, 천편일률 카드 레이아웃) 금지. 주제에 어울리는 고유한 색팔레트·타이포·여백·약간의 마이크로 인터랙션을 사용합니다.
-- **정적 브로슈어가 아니라 실제로 동작하는 페이지**를 만듭니다. 요청에 맞게 인터랙션을 인라인 <script> 로 실제 구현하세요:
-  · 폼(문의/신청/예약 등)은 제출 시 검증 + 화면 피드백 + 입력값을 localStorage 에 저장/복원하여 실제로 "받는" 동작을 합니다.
-  · 목록/방명록/할일 등은 입력→추가→localStorage 영속→삭제까지 동작합니다.
-  · 파일 업로드가 어울리면 <input type="file"> + 미리보기(FileReader)를 구현합니다.
-  · 탭/토글/필터/카운터/모달 등 필요한 동적 UI는 동작하도록 JS 로 구현합니다.
-  외부 서버가 없으므로 모든 처리는 클라이언트(브라우저)에서 완결합니다. 더미 백엔드/가짜 fetch 금지 — 실제로 동작하는 것만.
-- 설명/마크다운/코드펜스 없이 HTML 문서만 출력합니다. 반드시 <!DOCTYPE html> 로 시작합니다.`;
+- 출력은 **React 18 앱**입니다. CDN 으로 React/ReactDOM/Babel(standalone) 을 불러오고, <script type="text/babel"> 안에 함수형 컴포넌트 + Hooks(useState/useEffect)로 작성합니다. #root 에 마운트.
+  · CDN: https://unpkg.com/react@18/umd/react.production.min.js, react-dom@18, @babel/standalone.
+  · 컴포넌트로 분리(App, Hero, 각 섹션, Form 등)하고 JSX 로 작성합니다.
+- 반응형(모바일 포함), 시맨틱, 한국어 콘텐츠. 헤더/히어로/핵심 섹션 2~4개/푸터 + 그럴듯한 더미 콘텐츠.
+- 디자인: 진부한 "AI 느낌"(보라 그라데이션, Inter/Arial 기본폰트, 천편일률 카드) 금지. 주제에 맞는 고유 팔레트·타이포·여백·마이크로 인터랙션.
+- **실제로 동작하는 앱**: 폼은 검증+제출+상태/ localStorage 저장, 목록 추가/삭제, 탭/토글/모달 등을 React state 로 진짜 동작하게 구현. 가짜 fetch 금지.
+- [절대] 질문하거나 되묻지 마라. 입력이 모호하거나 짧아도(예: "adsf") 멈추지 말고, 가장 그럴듯한 사이트(랜딩 등)를 스스로 정해 **완성된 앱을 무조건 출력**한다. 설명/안내문 금지.
+- 설명/마크다운/코드펜스 없이 HTML 문서만 출력. 반드시 <!DOCTYPE html> 로 시작.`;
 
 function stripFence(t: string): string {
   const m = t.match(/```(?:html)?\s*([\s\S]*?)```/);

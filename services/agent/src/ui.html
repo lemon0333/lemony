@@ -49,18 +49,21 @@
   /* 워크스페이스(생성 후) */
   #workspace { display:none; flex:1; }
   #workspace.on { display:flex; }
-  .chat { width:380px; border-right:1px solid var(--line); display:flex; flex-direction:column; background:#0e0e10; }
-  .chat .log { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px; }
-  .msg { padding:10px 13px; border-radius:13px; font-size:14px; line-height:1.45; max-width:92%; }
-  .msg.me { align-self:flex-end; background:var(--accent); color:#fff; }
-  .msg.ai { align-self:flex-start; background:#1d1d20; border:1px solid var(--line); color:#e9e9ec; }
-  .msg.ai.work { color:#bdf24a; }
-  .chat .compose { border-top:1px solid var(--line); padding:12px; display:flex; gap:8px; }
-  .chat .compose input { flex:1; background:#1b1b1e; border:1px solid #2c2c30; color:#f2f2f4; border-radius:12px; padding:11px 12px; outline:none; font-size:14px; }
+  .chat { width:400px; border-right:1px solid var(--line); display:flex; flex-direction:column; background:linear-gradient(180deg,#101013,#0c0c0e); }
+  .chat .chead { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:9px; font-weight:700; }
+  .chat .chead .dotlogo { width:22px; height:22px; border-radius:7px; background:linear-gradient(135deg,#ff8a3d,#ff5db1); }
+  .chat .log { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .msg { padding:11px 14px; border-radius:16px; font-size:14px; line-height:1.55; max-width:88%; word-break:break-word; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .msg.me { align-self:flex-end; background:linear-gradient(135deg,#6d5efc,#8a5bff); color:#fff; border-bottom-right-radius:5px; }
+  .msg.ai { align-self:flex-start; background:#1b1b1f; border:1px solid #2a2a30; color:#e9e9ec; border-bottom-left-radius:5px; }
+  .msg.ai.work { color:#bdf24a; border-color:#39431f; }
+  .chat .compose { border-top:1px solid var(--line); padding:14px; display:flex; gap:8px; }
+  .chat .compose input { flex:1; background:#1b1b1e; border:1px solid #2c2c30; color:#f2f2f4; border-radius:13px; padding:12px 14px; outline:none; font-size:14px; }
+  .chat .compose input:focus { border-color:var(--accent); }
   .preview { flex:1; background:#fff; position:relative; }
   .preview iframe { width:100%; height:100%; border:0; }
-  .bar { height:40px; background:#0e0e10; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; padding:0 14px; color:var(--muted); font-size:12px; }
-  .dot { width:10px; height:10px; border-radius:50%; }
+  .bar { height:42px; background:#0e0e10; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; padding:0 16px; color:var(--muted); font-size:12px; }
+  .dot { width:11px; height:11px; border-radius:50%; }
   .spin { width:16px; height:16px; border:2px solid #444; border-top-color:#bdf24a; border-radius:50%; animation:s .8s linear infinite; display:inline-block; vertical-align:-3px; }
   @keyframes s { to { transform:rotate(360deg); } }
 
@@ -134,6 +137,7 @@
     <!-- 워크스페이스 -->
     <section id="workspace">
       <div class="chat">
+        <div class="chead"><span class="dotlogo"></span> lemony</div>
         <div class="log" id="log"></div>
         <div class="compose">
           <input id="editInput" placeholder="바꾸고 싶은 걸 말해보세요… 예: 다크모드로" />
