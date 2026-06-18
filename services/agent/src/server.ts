@@ -1,47 +1,85 @@
 import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 import { handleEdit } from './edit-loop.ts';
+import { createSite, editHtml } from './generate.ts';
 
-// lemony 에이전트 HTTP 서버 — 빌더 UI(apps/builder)가 POST /edit 로 자연어 편집을 요청한다.
-// 실행: npm -w @lemony/agent run serve   (node --experimental-strip-types src/server.ts)
+// lemony 에이전트 HTTP 서버.
+//  POST /create   {prompt}            → 자연어로 새 사이트 생성 → {id, previewUrl}
+//  POST /edit-site {id, prompt}       → 생성된 단일 HTML 사이트를 자연어로 수정
+//  GET  /preview/<id>/...             → 생성된 사이트 정적 서빙 (빌더 iframe 용)
+//  POST /edit     {projectDir,prompt} → (고급) 기존 프로젝트를 Quarkify 그라운딩 편집
+// 실행: npm -w @lemony/agent run serve
 
 const PORT = Number(process.env.PORT || 8787);
+const SITES = process.env.LEMONY_SITES || path.join(os.tmpdir(), 'lemony-sites');
+fs.mkdirSync(SITES, { recursive: true });
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
   'access-control-allow-headers': 'content-type',
 };
+const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
+const json = (res: http.ServerResponse, code: number, obj: unknown) => {
+  res.writeHead(code, { 'content-type': 'application/json', ...CORS });
+  res.end(JSON.stringify(obj));
+};
+const readBody = async (req: http.IncomingMessage) => { let b = ''; for await (const c of req) b += c; return b ? JSON.parse(b) : {}; };
 
 const server = http.createServer(async (req, res) => {
+  const url = req.url || '/';
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return; }
-  if (req.method === 'GET' && req.url === '/health') {
-    res.writeHead(200, { 'content-type': 'application/json', ...CORS });
-    res.end(JSON.stringify({ ok: true, hasKey: !!process.env.ANTHROPIC_API_KEY }));
+
+  if (req.method === 'GET' && url === '/health') {
+    return json(res, 200, { ok: true, sites: SITES });
+  }
+
+  // 정적 프리뷰: /preview/<id>/<file?>  (단일 HTML 사이트 → 기본 index.html)
+  if (req.method === 'GET' && url.startsWith('/preview/')) {
+    const rel = decodeURIComponent(url.slice('/preview/'.length).split('?')[0]);
+    const parts = rel.split('/').filter((p) => p && p !== '..');
+    const id = parts[0] || '';
+    const sub = parts.slice(1).join('/') || 'index.html';
+    const file = path.join(SITES, id, sub);
+    if (!file.startsWith(path.join(SITES, id)) || !fs.existsSync(file)) { res.writeHead(404, CORS); res.end('not found'); return; }
+    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream', ...CORS });
+    fs.createReadStream(file).pipe(res);
     return;
   }
-  if (req.method === 'POST' && req.url === '/edit') {
-    let body = '';
-    for await (const chunk of req) body += chunk;
+
+  if (req.method === 'POST' && url === '/create') {
     try {
-      const { projectDir, prompt, sourceFiles } = JSON.parse(body || '{}');
-      if (!projectDir || !prompt) {
-        res.writeHead(400, { 'content-type': 'application/json', ...CORS });
-        res.end(JSON.stringify({ error: 'projectDir 와 prompt 가 필요합니다.' }));
-        return;
-      }
-      const result = await handleEdit({ projectDir, prompt, sourceFiles });
-      res.writeHead(200, { 'content-type': 'application/json', ...CORS });
-      res.end(JSON.stringify(result));
-    } catch (err: any) {
-      res.writeHead(500, { 'content-type': 'application/json', ...CORS });
-      res.end(JSON.stringify({ error: err && err.message ? err.message : String(err) }));
-    }
-    return;
+      const { prompt } = await readBody(req);
+      if (!prompt) return json(res, 400, { error: 'prompt 가 필요합니다.' });
+      const site = createSite(prompt, SITES);
+      return json(res, 200, { id: site.id, previewUrl: `/preview/${site.id}/` });
+    } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
   }
+
+  if (req.method === 'POST' && url === '/edit-site') {
+    try {
+      const { id, prompt } = await readBody(req);
+      const file = path.join(SITES, id || '', 'index.html');
+      if (!id || !fs.existsSync(file)) return json(res, 404, { error: '사이트를 찾을 수 없습니다.' });
+      const current = fs.readFileSync(file, 'utf-8');
+      fs.writeFileSync(file, editHtml(current, prompt), 'utf-8');
+      return json(res, 200, { id, previewUrl: `/preview/${id}/` });
+    } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
+  }
+
+  if (req.method === 'POST' && url === '/edit') { // 고급: 기존 프로젝트 편집
+    try {
+      const { projectDir, prompt, sourceFiles } = await readBody(req);
+      if (!projectDir || !prompt) return json(res, 400, { error: 'projectDir 와 prompt 가 필요합니다.' });
+      return json(res, 200, await handleEdit({ projectDir, prompt, sourceFiles }));
+    } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
+  }
+
   res.writeHead(404, CORS); res.end();
 });
 
 server.listen(PORT, () => {
-  console.log(`🍋 lemony agent listening on http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) console.log('⚠️  ANTHROPIC_API_KEY 미설정 — /edit 는 dry-run 으로 동작합니다.');
+  console.log(`🍋 lemony agent: http://localhost:${PORT}  (sites: ${SITES})`);
 });
