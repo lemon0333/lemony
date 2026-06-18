@@ -36,6 +36,17 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true, sites: SITES });
   }
 
+  // 빌더 UI (Lovable 스타일) — 서버가 UI 와 API 를 함께 서빙
+  if (req.method === 'GET' && (url === '/' || url === '/index.html')) {
+    const uiFile = path.join(import.meta.dirname, 'ui.html');
+    if (fs.existsSync(uiFile)) {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', ...CORS });
+      fs.createReadStream(uiFile).pipe(res);
+      return;
+    }
+    return json(res, 500, { error: 'ui.html 없음' });
+  }
+
   // 정적 프리뷰: /preview/<id>/<file?>  (단일 HTML 사이트 → 기본 index.html)
   if (req.method === 'GET' && url.startsWith('/preview/')) {
     const rel = decodeURIComponent(url.slice('/preview/'.length).split('?')[0]);

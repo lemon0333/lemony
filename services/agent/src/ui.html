@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>lemony 🍋</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#0b0b0d; --panel:#161618; --line:#262629; --muted:#8a8a90; --accent:#6d5efc; }
+  html,body { height:100%; }
+  body { background:var(--bg); color:#f2f2f4; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo",sans-serif; overflow:hidden; }
+  .app { display:flex; height:100vh; }
+
+  /* 사이드바 */
+  .side { width:72px; background:#0e0e10; border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:18px; flex-shrink:0; }
+  .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#ff8a3d,#ff5db1); }
+  .avatar { width:34px; height:34px; border-radius:9px; background:var(--accent); color:#fff; display:grid; place-items:center; font-weight:700; font-size:14px; }
+  .side .ic { width:22px; height:22px; color:#6b6b72; cursor:pointer; }
+  .side .ic:hover { color:#ddd; }
+  .side .spacer { flex:1; }
+
+  /* 메인 */
+  .main { flex:1; position:relative; display:flex; flex-direction:column; }
+
+  /* 랜딩(히어로) */
+  #landing { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:24px; }
+  #landing .glow { position:absolute; inset:0; background:
+      radial-gradient(60% 50% at 50% 115%, #ff3d8b 0%, transparent 60%),
+      radial-gradient(55% 45% at 50% 100%, #8a5bff 0%, transparent 55%),
+      radial-gradient(60% 50% at 50% 130%, #ff7a3d 0%, transparent 55%);
+    filter:saturate(1.1); z-index:0; }
+  #landing > * { position:relative; z-index:1; }
+  .promo { display:inline-flex; align-items:center; gap:10px; background:rgba(20,20,24,.6); border:1px solid var(--line); padding:8px 14px; border-radius:999px; font-size:14px; backdrop-filter:blur(6px); }
+  .promo b { background:var(--accent); color:#fff; padding:2px 9px; border-radius:999px; font-size:12px; }
+  .head { font-size:44px; font-weight:700; letter-spacing:-.02em; text-align:center; }
+
+  /* 채팅 입력박스 */
+  .box { width:min(760px,92vw); background:#1b1b1e; border:1px solid #2c2c30; border-radius:22px; padding:16px 16px 12px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+  .box textarea { width:100%; background:transparent; border:0; color:#f2f2f4; font-size:16px; resize:none; outline:none; min-height:26px; max-height:160px; font-family:inherit; }
+  .box textarea::placeholder { color:#7a7a80; }
+  .box .row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+  .box .left, .box .right { display:flex; align-items:center; gap:10px; }
+  .chip { color:#cfcfd4; font-size:14px; display:flex; align-items:center; gap:4px; }
+  .iconbtn { width:34px; height:34px; border-radius:50%; border:0; background:#2a2a2e; color:#cfcfd4; cursor:pointer; display:grid; place-items:center; }
+  .send { background:#3a3a40; }
+  .send:enabled { background:#f2f2f4; color:#111; }
+  .plus { width:34px; height:34px; border-radius:8px; background:transparent; border:0; color:#9a9aa0; font-size:22px; cursor:pointer; }
+
+  /* 워크스페이스(생성 후) */
+  #workspace { display:none; flex:1; }
+  #workspace.on { display:flex; }
+  .chat { width:380px; border-right:1px solid var(--line); display:flex; flex-direction:column; background:#0e0e10; }
+  .chat .log { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .msg { padding:10px 13px; border-radius:13px; font-size:14px; line-height:1.45; max-width:92%; }
+  .msg.me { align-self:flex-end; background:var(--accent); color:#fff; }
+  .msg.ai { align-self:flex-start; background:#1d1d20; border:1px solid var(--line); color:#e9e9ec; }
+  .msg.ai.work { color:#bdf24a; }
+  .chat .compose { border-top:1px solid var(--line); padding:12px; display:flex; gap:8px; }
+  .chat .compose input { flex:1; background:#1b1b1e; border:1px solid #2c2c30; color:#f2f2f4; border-radius:12px; padding:11px 12px; outline:none; font-size:14px; }
+  .preview { flex:1; background:#fff; position:relative; }
+  .preview iframe { width:100%; height:100%; border:0; }
+  .bar { height:40px; background:#0e0e10; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; padding:0 14px; color:var(--muted); font-size:12px; }
+  .dot { width:10px; height:10px; border-radius:50%; }
+  .spin { width:16px; height:16px; border:2px solid #444; border-top-color:#bdf24a; border-radius:50%; animation:s .8s linear infinite; display:inline-block; vertical-align:-3px; }
+  @keyframes s { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side">
+    <div class="logo"></div>
+    <div class="avatar">S</div>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 16l3-5 5-3-3 5z"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h6a4 4 0 014 4v6"/></svg>
+    <div class="spacer"></div>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.2 1 5.9L12 16.9 6.8 19.3l1-5.9L3.5 9.2l5.9-.9z"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+  </nav>
+
+  <main class="main">
+    <!-- 랜딩 -->
+    <section id="landing">
+      <div class="glow"></div>
+      <div class="promo"><b>Promo</b> 한국어 한 줄이면 웹사이트가 됩니다 →</div>
+      <h1 class="head" id="headline">무엇을 만들까요, 손현빈?</h1>
+      <div class="box">
+        <textarea id="prompt" rows="1" placeholder="lemony에게 웹사이트를 만들어달라고 해보세요…  예: 동네 빵집 소개 페이지"></textarea>
+        <div class="row">
+          <div class="left"><button class="plus" title="첨부">+</button></div>
+          <div class="right">
+            <span class="chip">Build ▾</span>
+            <button class="iconbtn" title="음성">🎤</button>
+            <button class="iconbtn send" id="go" title="만들기" disabled>↑</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 워크스페이스 -->
+    <section id="workspace">
+      <div class="chat">
+        <div class="log" id="log"></div>
+        <div class="compose">
+          <input id="editInput" placeholder="바꾸고 싶은 걸 말해보세요… 예: 다크모드로" />
+          <button class="iconbtn send" id="editGo" title="수정">↑</button>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span id="status" style="margin-left:8px;">미리보기</span></div>
+        <div class="preview"><iframe id="frame" title="preview"></iframe></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API = location.origin; // 같은 서버가 UI와 API를 함께 서빙
+let siteId = null;
+const $ = (s) => document.querySelector(s);
+const promptEl = $('#prompt'), go = $('#go'), log = $('#log'), frame = $('#frame'), statusEl = $('#status');
+
+promptEl.addEventListener('input', () => { go.disabled = !promptEl.value.trim(); autoGrow(promptEl); });
+promptEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) create(); });
+go.addEventListener('click', create);
+$('#editGo').addEventListener('click', edit);
+$('#editInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') edit(); });
+
+function autoGrow(t){ t.style.height='auto'; t.style.height=Math.min(160,t.scrollHeight)+'px'; }
+function addMsg(text, who){ const d=document.createElement('div'); d.className='msg '+who; d.innerHTML=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+function showWorkspace(){ $('#landing').style.display='none'; $('#workspace').classList.add('on'); }
+function refresh(url){ frame.src = API + url + '?t=' + Date.now(); }
+
+async function create(){
+  const prompt = promptEl.value.trim(); if(!prompt) return;
+  showWorkspace();
+  addMsg(prompt, 'me');
+  const working = addMsg('<span class="spin"></span> 사이트를 만들고 있어요…', 'ai work');
+  statusEl.textContent = '생성 중…';
+  try {
+    const r = await fetch(API+'/create', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({prompt})});
+    const d = await r.json();
+    if(d.error){ working.className='msg ai'; working.textContent='에러: '+d.error; return; }
+    siteId = d.id;
+    working.className='msg ai'; working.textContent='✅ 사이트를 만들었어요. 오른쪽에서 확인하고, 바꾸고 싶은 걸 말해보세요.';
+    statusEl.textContent = '미리보기 · ' + siteId;
+    refresh(d.previewUrl);
+  } catch(e){ working.className='msg ai'; working.textContent='연결 실패: 에이전트 서버(/serve)가 켜져 있나요? '+e; }
+}
+
+async function edit(){
+  const inp = $('#editInput'); const prompt = inp.value.trim(); if(!prompt || !siteId) return;
+  inp.value='';
+  addMsg(prompt, 'me');
+  const working = addMsg('<span class="spin"></span> 바꾸는 중…', 'ai work');
+  statusEl.textContent = '수정 중…';
+  try {
+    const r = await fetch(API+'/edit-site', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({id:siteId, prompt})});
+    const d = await r.json();
+    if(d.error){ working.className='msg ai'; working.textContent='에러: '+d.error; return; }
+    working.className='msg ai'; working.textContent='✅ 이렇게 바꿨어요.';
+    statusEl.textContent = '미리보기 · ' + siteId;
+    refresh(d.previewUrl);
+  } catch(e){ working.className='msg ai'; working.textContent='실패: '+e; }
+}
+</script>
+</body>
+</html>

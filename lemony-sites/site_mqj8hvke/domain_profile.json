@@ -1,0 +1,33 @@
+{
+  "domain": "Lovable과 같은 AI 기반 웹/앱 생성 플랫폼의 대시보드 홈 화면으로, 사용자가 자연어 프롬프트를 입력해 앱이나 리포트를 생성하는 제품입니다.",
+  "palette": [
+    "#0d0d0f",
+    "#1c1c1f",
+    "#ff2d78",
+    "#ff7a3c",
+    "#3b6dff",
+    "#8a7bff"
+  ],
+  "style": [
+    "다크 모드",
+    "그라데이션 오로라 배경",
+    "미니멀 사이드바",
+    "모던 SaaS",
+    "둥근 모서리 입력창",
+    "센터 정렬 히어로"
+  ],
+  "content": [
+    "What's on your mind, SH?",
+    "Ask Lovable to generate a report on…",
+    "Promo",
+    "Credits go 2x further until Apr 30",
+    "Build",
+    "S"
+  ],
+  "cards": [
+    {
+      "file": "/Users/sonhyeonbin/.claude/image-cache/455f4128-1cc2-478d-acb8-27a19fa372fb/1.png",
+      "desc": "AI 앱 생성 플랫폼(Lovable 스타일)의 다크 테마 대시보드 홈 — 프롬프트 입력창과 오로라 그라데이션 배경"
+    }
+  ]
+}

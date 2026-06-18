@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ingestImages, domainPromptBlock, saveProfile } from './domain.ts';
 
 // 웹사이트 생성 엔진 — 비전공자의 한국어 요청 → 완성된 단일 파일 사이트(index.html).
 // LLM 백엔드: 로그인된 claude CLI(헤드리스). 별도 API 키 불필요.
@@ -11,6 +12,12 @@ const GEN_SYSTEM = `당신은 lemony의 웹사이트 생성 엔진입니다. 비
 - 완전한 자기완결 HTML 문서 하나만 출력합니다 (인라인 <style> + 필요한 최소 인라인 <script>). 외부 빌드/번들/CDN 의존 없이 그대로 열려야 합니다.
 - 반응형(모바일 포함), 시맨틱 마크업, 한국어 콘텐츠. 헤더/히어로/핵심 섹션 2~4개/푸터 + 그럴듯한 더미 콘텐츠를 채웁니다.
 - 디자인: 진부한 "AI 느낌"(보라 그라데이션, Inter/Arial/system 기본 폰트, 천편일률 카드 레이아웃) 금지. 주제에 어울리는 고유한 색팔레트·타이포·여백·약간의 마이크로 인터랙션을 사용합니다.
+- **정적 브로슈어가 아니라 실제로 동작하는 페이지**를 만듭니다. 요청에 맞게 인터랙션을 인라인 <script> 로 실제 구현하세요:
+  · 폼(문의/신청/예약 등)은 제출 시 검증 + 화면 피드백 + 입력값을 localStorage 에 저장/복원하여 실제로 "받는" 동작을 합니다.
+  · 목록/방명록/할일 등은 입력→추가→localStorage 영속→삭제까지 동작합니다.
+  · 파일 업로드가 어울리면 <input type="file"> + 미리보기(FileReader)를 구현합니다.
+  · 탭/토글/필터/카운터/모달 등 필요한 동적 UI는 동작하도록 JS 로 구현합니다.
+  외부 서버가 없으므로 모든 처리는 클라이언트(브라우저)에서 완결합니다. 더미 백엔드/가짜 fetch 금지 — 실제로 동작하는 것만.
 - 설명/마크다운/코드펜스 없이 HTML 문서만 출력합니다. 반드시 <!DOCTYPE html> 로 시작합니다.`;
 
 function stripFence(t: string): string {
@@ -22,9 +29,9 @@ function runClaude(prompt: string): string {
   return execFileSync('claude', ['-p', prompt, '--output-format', 'text'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
-// 자연어 → 완성 HTML 문자열
-export function generateHtml(prompt: string): string {
-  let html = stripFence(runClaude(`${GEN_SYSTEM}\n\n사용자 요청:\n${prompt}\n\n위 요청에 맞는 완성된 index.html 한 개를 출력하세요.`));
+// 자연어 → 완성 HTML 문자열. domainBlock 이 있으면 도메인(이미지 RAG) 그라운딩을 주입.
+export function generateHtml(prompt: string, domainBlock = ''): string {
+  let html = stripFence(runClaude(`${GEN_SYSTEM}\n${domainBlock}\n사용자 요청:\n${prompt}\n\n위 요청에 맞는 완성된 index.html 한 개를 출력하세요.`));
   if (!/<!doctype|<html/i.test(html)) html = `<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>\n${html}\n</body></html>`;
   return html;
 }
@@ -37,25 +44,56 @@ export function editHtml(current: string, prompt: string): string {
   return html;
 }
 
-// 새 사이트 워크스페이스 생성 (index.html 작성)
-export function createSite(prompt: string, baseDir: string): { id: string; dir: string; file: string } {
+// 새 사이트 워크스페이스 생성 (index.html 작성). domainBlock 으로 도메인 그라운딩 가능.
+export function createSite(prompt: string, baseDir: string, domainBlock = ''): { id: string; dir: string; file: string } {
   const id = 'site_' + Date.now().toString(36);
   const dir = path.join(baseDir, id);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, 'index.html');
-  fs.writeFileSync(file, generateHtml(prompt), 'utf8');
+  fs.writeFileSync(file, generateHtml(prompt, domainBlock), 'utf8');
   return { id, dir, file };
 }
 
-// CLI: node --experimental-strip-types src/generate.ts "<만들고 싶은 사이트>" [outDir]
+// CLI:
+//   생성: node --experimental-strip-types src/generate.ts "<사이트 설명>" [outDir]
+//   수정: node --experimental-strip-types src/generate.ts --edit <siteDir> "<수정 요청>"
 const invokedDirect = process.argv[1] && process.argv[1].endsWith('generate.ts');
 if (invokedDirect) {
-  const prompt = process.argv[2];
-  if (!prompt) { console.error('사용법: node --experimental-strip-types src/generate.ts "<사이트 설명>" [outDir]'); process.exit(1); }
-  const base = process.argv[3] ? path.resolve(process.argv[3]) : path.join(process.cwd(), 'lemony-sites');
-  console.log('🍋 사이트 생성 중 (claude CLI)...');
-  const site = createSite(prompt, base);
-  const bytes = fs.statSync(site.file).size;
-  console.log(`✅ 생성 완료: ${site.file} (${(bytes / 1024).toFixed(1)} KB)`);
-  console.log(`   브라우저로 열기: open "${site.file}"`);
+  if (process.argv[2] === '--edit') {
+    const siteDir = process.argv[3];
+    const instruction = process.argv[4];
+    if (!siteDir || !instruction) { console.error('사용법: ... --edit <siteDir> "<수정 요청>"'); process.exit(1); }
+    const file = path.join(path.resolve(siteDir), 'index.html');
+    if (!fs.existsSync(file)) { console.error(`❌ index.html 없음: ${file}`); process.exit(1); }
+    const before = fs.readFileSync(file, 'utf-8');
+    fs.writeFileSync(file + '.prev', before, 'utf-8'); // 변경 전 백업(diff 용)
+    console.log(`✏️  수정 중 (claude CLI): "${instruction}"`);
+    const after = editHtml(before, instruction);
+    fs.writeFileSync(file, after, 'utf-8');
+    console.log(`✅ 수정 완료: ${file} (${(before.length / 1024).toFixed(1)}→${(after.length / 1024).toFixed(1)} KB)`);
+    console.log(`   diff: diff "${file}.prev" "${file}"  |  열기: open "${file}"`);
+  } else if (process.argv[2] === '--domain') {
+    // 이미지 RAG: --domain <img1,img2,...> "<사이트 설명>" [outDir]
+    const imgs = (process.argv[3] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const prompt = process.argv[4];
+    if (!imgs.length || !prompt) { console.error('사용법: ... --domain <img1,img2> "<사이트 설명>" [outDir]'); process.exit(1); }
+    console.log(`🖼  도메인 이미지 분석 중 (${imgs.length}장, claude vision)...`);
+    const profile = ingestImages(imgs);
+    console.log(`   도메인: ${profile.domain}`);
+    console.log(`   팔레트: ${profile.palette.join(', ')}  | 스타일: ${profile.style.join(', ')}`);
+    const base = process.argv[5] ? path.resolve(process.argv[5]) : path.join(process.cwd(), 'lemony-sites');
+    console.log('🍋 도메인 그라운딩 사이트 생성 중...');
+    const site = createSite(prompt, base, domainPromptBlock(profile));
+    saveProfile(profile, path.join(site.dir, 'domain_profile.json'));
+    console.log(`✅ 생성 완료: ${site.file} (${(fs.statSync(site.file).size / 1024).toFixed(1)} KB)`);
+    console.log(`   브라우저로 열기: open "${site.file}"`);
+  } else {
+    const prompt = process.argv[2];
+    if (!prompt) { console.error('사용법: node --experimental-strip-types src/generate.ts "<사이트 설명>" [outDir]'); process.exit(1); }
+    const base = process.argv[3] ? path.resolve(process.argv[3]) : path.join(process.cwd(), 'lemony-sites');
+    console.log('🍋 사이트 생성 중 (claude CLI)...');
+    const site = createSite(prompt, base);
+    console.log(`✅ 생성 완료: ${site.file} (${(fs.statSync(site.file).size / 1024).toFixed(1)} KB)`);
+    console.log(`   브라우저로 열기: open "${site.file}"`);
+  }
 }
