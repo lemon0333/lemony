@@ -5,6 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-strip-types src/index.ts",
-    "import": "node --experimental-strip-types src/import.ts"
+    "import": "node --experimental-strip-types src/import.ts",
+    "serve": "node --experimental-strip-types src/server.ts",
+    "autofix": "node --experimental-strip-types src/autofix.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0"
   }
 }

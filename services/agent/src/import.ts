@@ -44,8 +44,11 @@ export function detectStack(dir: string): Stack {
     return { language: 'Python', framework: 'Python', sourceFiles: [sub] };
   }
   if (has(dir, 'package.json')) {
-    const ts = has(dir, 'tsconfig.json') || anyFile(dir, '.ts');
-    const sf = ts ? ['src/**/*.ts', 'src/**/*.tsx'] : ['src/**/*.js', 'src/**/*.jsx'];
+    const ts = has(dir, 'tsconfig.json') || anyFile(dir, '.ts') || anyFile(dir, '.tsx');
+    // TS 글로브에도 js/jsx 포함 (혼합 프로젝트 대비), JS 프로젝트는 ts/tsx 도 포함
+    const sf = ts
+      ? ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx']
+      : ['src/**/*.js', 'src/**/*.jsx', 'src/**/*.ts', 'src/**/*.tsx'];
     let framework = 'Node/JS';
     try {
       const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
@@ -101,7 +104,8 @@ export function importProject(source: string, opts: { workDir?: string } = {}): 
   // 3) Quarkify 매핑
   const mapDir = path.join(workDir, `${name}-quarkmap`);
   const configPath = path.join(workDir, `${name}.config.mjs`);
-  generateConfig({ name, srcDir, outDir: mapDir, sourceFiles: stack.sourceFiles, configPath, incremental: true });
+  // 파일 발견은 Quarkify auto 모드에 위임 — 스택 라벨(stack)은 요약용으로만 쓴다.
+  generateConfig({ name, srcDir, outDir: mapDir, sourceFiles: ['auto'], configPath, incremental: true });
   console.log('🧭 Quarkify 매핑 중...');
   quarkifyRun(configPath, { quiet: true });
 
