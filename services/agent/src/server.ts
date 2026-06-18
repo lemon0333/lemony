@@ -28,6 +28,9 @@ const json = (res: http.ServerResponse, code: number, obj: unknown) => {
   res.end(JSON.stringify(obj));
 };
 const readBody = async (req: http.IncomingMessage) => { let b = ''; for await (const c of req) b += c; return b ? JSON.parse(b) : {}; };
+const metaPath = (id: string) => path.join(SITES, id, 'meta.json');
+const writeMeta = (id: string, m: any) => { try { fs.writeFileSync(metaPath(id), JSON.stringify(m), 'utf-8'); } catch {} };
+const readMeta = (id: string) => { try { return JSON.parse(fs.readFileSync(metaPath(id), 'utf-8')); } catch { return {}; } };
 
 const server = http.createServer(async (req, res) => {
   const url = req.url || '/';
@@ -80,12 +83,31 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 로그인 사용자의 사이트 목록 (내 프로젝트)
+  if (req.method === 'GET' && url === '/sites') {
+    const user = userFromReq(req);
+    const out: any[] = [];
+    for (const id of fs.readdirSync(SITES)) {
+      const metaFile = path.join(SITES, id, 'meta.json');
+      if (!fs.existsSync(metaFile)) continue;
+      try {
+        const m = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
+        if (user && m.owner && m.owner !== user.id) continue; // 내 것만
+        out.push({ id, name: m.name, updatedAt: m.updatedAt, previewUrl: `/preview/${id}/` });
+      } catch {}
+    }
+    out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return json(res, 200, { sites: out.slice(0, 50) });
+  }
+
   if (req.method === 'POST' && url === '/create') {
     try {
       const { prompt } = await readBody(req);
       if (!prompt) return json(res, 400, { error: 'prompt 가 필요합니다.' });
+      const user = userFromReq(req);
       const site = createSite(prompt, SITES);
-      return json(res, 200, { id: site.id, previewUrl: `/preview/${site.id}/` });
+      writeMeta(site.id, { owner: user?.id || 'anon', name: prompt.slice(0, 40), prompt, createdAt: Date.now(), updatedAt: Date.now() });
+      return json(res, 200, { id: site.id, name: prompt.slice(0, 40), previewUrl: `/preview/${site.id}/` });
     } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
   }
 
@@ -96,6 +118,7 @@ const server = http.createServer(async (req, res) => {
       if (!id || !fs.existsSync(file)) return json(res, 404, { error: '사이트를 찾을 수 없습니다.' });
       const current = fs.readFileSync(file, 'utf-8');
       fs.writeFileSync(file, editHtml(current, prompt), 'utf-8');
+      const m = readMeta(id); writeMeta(id, { ...m, updatedAt: Date.now() });
       return json(res, 200, { id, previewUrl: `/preview/${id}/` });
     } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
   }

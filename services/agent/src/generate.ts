@@ -26,7 +26,11 @@ function stripFence(t: string): string {
 }
 
 function runClaude(prompt: string): string {
-  return execFileSync('claude', ['-p', prompt, '--output-format', 'text'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  // 도구 사용 금지(파일 쓰기/편집/Bash) — headless claude 가 Write 로 파일을 만들려다
+  // 권한에 막혀 HTML 대신 안내문을 뱉는 것을 방지. 결과는 stdout 으로만.
+  const guarded = prompt + '\n\n[중요] 어떤 도구(Write/Edit/Bash/Read 등)도 사용하지 말 것. 파일을 만들지 말고, 결과 HTML 전문만 응답 텍스트로 그대로 출력하라.';
+  return execFileSync('claude', ['-p', guarded, '--disallowedTools', 'Write,Edit,Bash,Read,Glob,Grep', '--output-format', 'text'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
 // 자연어 → 완성 HTML 문자열. domainBlock 이 있으면 도메인(이미지 RAG) 그라운딩을 주입.

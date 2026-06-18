@@ -1,0 +1,9 @@
+server:
+  port: 8787
+
+lemony:
+  # 사이트 워크스페이스 루트
+  sites-dir: ${LEMONY_SITES:${user.home}/Downloads/lemony/lemony-sites}
+  # Node 에이전트 도구 경로 (생성/맵핑 로직 재사용 — claude CLI + Quarkify 를 Node 가 감쌈)
+  agent-dir: ${LEMONY_AGENT_DIR:${user.dir}/../agent}
+  quarkify: ${QUARKIFY_PATH:${user.home}/Downloads/Quarkify/quarkify/quarkify.mjs}

@@ -78,6 +78,10 @@
   .lbtn:disabled { opacity:.45; cursor:not-allowed; }
   #login .or { color:#55555c; font-size:12px; margin:6px 0 12px; }
   #login .note { color:#7a7a80; font-size:11px; margin-top:8px; min-height:14px; }
+  #projects { width:min(760px,92vw); margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; }
+  #projects .label { width:100%; color:#6b6b72; font-size:12px; }
+  #projects .pill { background:rgba(20,20,24,.6); border:1px solid var(--line); color:#cfcfd4; padding:7px 12px; border-radius:999px; font-size:13px; cursor:pointer; }
+  #projects .pill:hover { border-color:#4a4a52; color:#fff; }
 </style>
 </head>
 <body>
@@ -124,6 +128,7 @@
           </div>
         </div>
       </div>
+      <div id="projects"></div>
     </section>
 
     <!-- 워크스페이스 -->
@@ -204,6 +209,21 @@ function onLoggedIn(user){
   av.title = `${user.name} (${user.provider}) · 클릭하면 로그아웃`;
   av.style.cursor = 'pointer';
   av.onclick = async () => { if(confirm('로그아웃할까요?')){ await fetch(API+'/auth/logout',{method:'POST'}); location.href='/'; } };
+}
+async function loadSites(){
+  try {
+    const d = await (await fetch(API+'/sites')).json();
+    const box = $('#projects');
+    if(!d.sites || !d.sites.length){ box.innerHTML=''; return; }
+    box.innerHTML = '<div class="label">내 프로젝트</div>' +
+      d.sites.map(s => `<span class="pill" data-id="${s.id}" data-url="${s.previewUrl}">${(s.name||s.id)}</span>`).join('');
+    box.querySelectorAll('.pill').forEach(p => p.onclick = () => openSite(p.dataset.id, p.dataset.url));
+  } catch(e){}
+}
+function openSite(id, url){
+  siteId = id; showWorkspace(); log.innerHTML='';
+  addMsg('기존 프로젝트를 불러왔어요. 바꾸고 싶은 걸 말해보세요.', 'ai');
+  statusEl.textContent = '미리보기 · ' + id; refresh(url);
 }
 async function initAuth(){
   const err = new URLSearchParams(location.search).get('login_error');
