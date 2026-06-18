@@ -3,5 +3,8 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "scripts": { "dev": "node --experimental-strip-types src/index.ts" }
+  "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts",
+    "import": "node --experimental-strip-types src/import.ts"
+  }
 }

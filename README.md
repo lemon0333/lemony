@@ -23,5 +23,17 @@ npm install        # (워크스페이스)
 npm run dev        # TODO: builder + agent 동시 실행
 ```
 
+## 기존 프로젝트 가져오기 (import)
+이미 만든 블로그/사이트를 lemony 로 가져와 이어서 작업할 수 있다. 스택 자동감지 → Quarkify 매핑 → "이해 요약" 생성:
+```bash
+# 깃 URL 또는 로컬 경로
+npm -w @lemony/agent run import -- https://github.com/user/blog.git
+npm -w @lemony/agent run import -- /path/to/existing-project
+```
+→ 스택(TS/React, Kotlin/Spring, Python, Go, Rust 등)을 감지하고 코드맵 + `IMPORT_SUMMARY.md`(역할/종류 분포, 진입점)를 만든다. 이후 에이전트가 이 맵 위에서 자연어 편집을 정확히 타겟팅한다. 구현: `services/agent/src/import.ts`.
+
 ## Quarkify 연동
-`services/agent/src/quarkify.ts` 가 Quarkify CLI(`node quarkify.mjs ...`, `--collapse`/`--k6`/`--doc`)를 child_process로 호출해 코드맵을 얻는다. (현재 Quarkify: `../Quarkify/quarkify`)
+`services/agent/src/quarkify.ts` 가 Quarkify CLI(`node quarkify.mjs ...`, `--collapse`/`--k6`/`--doc`/`--solve`)를 child_process로 호출해 코드맵을 얻는다. (현재 Quarkify: `../Quarkify/quarkify`)
+- `generateConfig` / `quarkifyRun` — 대상 코드 인덱싱
+- `loadSymbolMeta` — `quark_meta.json`(file:line) 그라운딩
+- `solve` — 이슈 키워드 → 관련 심볼/영향범위 팩
