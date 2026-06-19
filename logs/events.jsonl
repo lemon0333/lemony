@@ -1,0 +1,2 @@
+{"ts":"2026-06-19T02:25:20.413Z","user":null,"name":null,"ip":"::1","action":"login","provider":"demo","loginName":"현빈"}
+{"ts":"2026-06-19T02:27:18.520Z","user":"demo_bb1b4b8b","name":"현빈","ip":"::1","action":"create","mode":"stream","prompt":"동네 빵집 소개 + 예약 문의 폼","siteId":"site_mqkb66if","chars":8284}

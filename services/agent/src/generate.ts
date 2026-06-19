@@ -7,15 +7,13 @@ import { ingestAssets, retrieve, assetSpecBlock, imagePaths, saveAssets } from '
 // LLM 백엔드: 로그인된 claude CLI(헤드리스). 별도 API 키 불필요.
 // 단일 HTML 이라 빌드/번들 없이 즉시 프리뷰 가능 → 마찰 최소.
 
-const GEN_SYSTEM = `당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 **React 웹앱**을 단일 HTML 파일로 만듭니다(즉시 프리뷰 가능하도록 빌드 없이).
+const GEN_SYSTEM = `당신은 lemony의 웹사이트 생성 엔진입니다. 비전공자의 한국어 요청을 받아 완성된 웹앱을 만듭니다.
 규칙:
-- 출력은 **React 18 앱**입니다. CDN 으로 React/ReactDOM/Babel(standalone) 을 불러오고, <script type="text/babel"> 안에 함수형 컴포넌트 + Hooks(useState/useEffect)로 작성합니다. #root 에 마운트.
-  · CDN: https://unpkg.com/react@18/umd/react.production.min.js, react-dom@18, @babel/standalone.
-  · 컴포넌트로 분리(App, Hero, 각 섹션, Form 등)하고 JSX 로 작성합니다.
+- **완전한 자기완결 단일 HTML 문서** 하나만 출력합니다. 인라인 <style> + 인라인 <script>(바닐라 JS). **외부 CDN/스크립트/빌드 의존 절대 금지** — 그대로 열면 즉시 렌더되어야 합니다(브라우저 내 transpile/Babel/React-CDN 금지: 빈 화면 원인).
 - 반응형(모바일 포함), 시맨틱, 한국어 콘텐츠. 헤더/히어로/핵심 섹션 2~4개/푸터 + 그럴듯한 더미 콘텐츠.
 - 디자인: 진부한 "AI 느낌"(보라 그라데이션, Inter/Arial 기본폰트, 천편일률 카드) 금지. 주제에 맞는 고유 팔레트·타이포·여백·마이크로 인터랙션.
-- **실제로 동작하는 앱**: 폼은 검증+제출+상태/ localStorage 저장, 목록 추가/삭제, 탭/토글/모달 등을 React state 로 진짜 동작하게 구현. 가짜 fetch 금지.
-- [절대] 질문하거나 되묻지 마라. 입력이 모호하거나 짧아도(예: "adsf") 멈추지 말고, 가장 그럴듯한 사이트(랜딩 등)를 스스로 정해 **완성된 앱을 무조건 출력**한다. 설명/안내문 금지.
+- **정적 브로슈어가 아니라 실제로 동작하는 웹앱**: 폼은 검증+제출+화면 피드백+localStorage 저장/복원, 목록 추가/삭제, 탭/토글/모달/필터 등을 바닐라 JS 로 진짜 동작하게 구현. 가짜 fetch 금지.
+- [절대] 질문하거나 되묻지 마라. 입력이 모호/짧아도(예: "adsf") 멈추지 말고 가장 그럴듯한 사이트를 스스로 정해 **완성 앱을 무조건 출력**한다. 안내문 금지.
 - 설명/마크다운/코드펜스 없이 HTML 문서만 출력. 반드시 <!DOCTYPE html> 로 시작.`;
 
 function stripFence(t: string): string {

@@ -32,6 +32,18 @@ const metaPath = (id: string) => path.join(SITES, id, 'meta.json');
 const writeMeta = (id: string, m: any) => { try { fs.writeFileSync(metaPath(id), JSON.stringify(m), 'utf-8'); } catch {} };
 const readMeta = (id: string) => { try { return JSON.parse(fs.readFileSync(metaPath(id), 'utf-8')); } catch { return {}; } };
 
+// 사용자 채팅/요청 로그 (JSONL append). 분석·감사·재현용.
+const LOG_DIR = process.env.LEMONY_LOG_DIR || path.join(SITES, '..', 'logs');
+fs.mkdirSync(LOG_DIR, { recursive: true });
+const logEvent = (req: http.IncomingMessage, e: Record<string, unknown>) => {
+  try {
+    const user = userFromReq(req);
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+    fs.appendFileSync(path.join(LOG_DIR, 'events.jsonl'),
+      JSON.stringify({ ts: new Date().toISOString(), user: user?.id || null, name: user?.name || null, ip, ...e }) + '\n');
+  } catch { /* 로깅 실패는 무시 */ }
+};
+
 const server = http.createServer(async (req, res) => {
   const url = req.url || '/';
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return; }
@@ -52,7 +64,7 @@ const server = http.createServer(async (req, res) => {
     return handleCallback(provider, new URL(url, 'http://x').searchParams, res);
   }
   if (req.method === 'POST' && url === '/auth/demo') {
-    try { const { name } = await readBody(req); const user = demoLogin(name, res); return json(res, 200, { user }); }
+    try { const { name } = await readBody(req); const user = demoLogin(name, res); logEvent(req, { action: 'login', provider: 'demo', loginName: name }); return json(res, 200, { user }); }
     catch { const user = demoLogin('', res); return json(res, 200, { user }); }
   }
   if (req.method === 'POST' && url === '/auth/logout') {
@@ -119,6 +131,7 @@ const server = http.createServer(async (req, res) => {
       const dir = path.join(SITES, id); fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf-8');
       writeMeta(id, { owner: user?.id || 'anon', name: prompt.slice(0, 40), prompt, createdAt: Date.now(), updatedAt: Date.now() });
+      logEvent(req, { action: 'create', mode: 'stream', prompt, siteId: id, chars: html.length });
       send('done', { id, previewUrl: `/preview/${id}/` });
     } catch (err: any) { send('error', { error: err?.message || String(err) }); }
     res.end();
@@ -132,6 +145,7 @@ const server = http.createServer(async (req, res) => {
       const user = userFromReq(req);
       const site = createSite(prompt, SITES);
       writeMeta(site.id, { owner: user?.id || 'anon', name: prompt.slice(0, 40), prompt, createdAt: Date.now(), updatedAt: Date.now() });
+      logEvent(req, { action: 'create', prompt, siteId: site.id });
       return json(res, 200, { id: site.id, name: prompt.slice(0, 40), previewUrl: `/preview/${site.id}/` });
     } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
   }
@@ -144,6 +158,7 @@ const server = http.createServer(async (req, res) => {
       const current = fs.readFileSync(file, 'utf-8');
       fs.writeFileSync(file, editHtml(current, prompt), 'utf-8');
       const m = readMeta(id); writeMeta(id, { ...m, updatedAt: Date.now() });
+      logEvent(req, { action: 'edit', prompt, siteId: id });
       return json(res, 200, { id, previewUrl: `/preview/${id}/` });
     } catch (err: any) { return json(res, 500, { error: err?.message || String(err) }); }
   }
