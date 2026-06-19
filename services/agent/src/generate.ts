@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ingestAssets, retrieve, assetSpecBlock, imagePaths, saveAssets } from './domain.ts';
@@ -29,6 +29,40 @@ function runClaude(prompt: string): string {
   const guarded = prompt + '\n\n[중요] 어떤 도구(Write/Edit/Bash/Read 등)도 사용하지 말 것. 파일을 만들지 말고, 결과 HTML 전문만 응답 텍스트로 그대로 출력하라.';
   return execFileSync('claude', ['-p', guarded, '--disallowedTools', 'Write,Edit,Bash,Read,Glob,Grep', '--output-format', 'text'],
     { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+}
+
+// 스트리밍 생성: claude 를 spawn 해 출력이 쌓이는 동안 onChunk(누적텍스트)로 진행상황 전달.
+// (동그라미 대신 "코드 생성 중 N자" 같은 실시간 진행 표시용)
+export function generateHtmlStreaming(prompt: string, domainBlock: string, onChunk: (acc: string) => void): Promise<string> {
+  const guarded = `${GEN_SYSTEM}\n${domainBlock}\n사용자 요청:\n${prompt}\n\nHTML 전문만 출력(파일 쓰지 말 것).` +
+    '\n\n[중요] 어떤 도구도 쓰지 말고 결과 HTML 전문만 출력하라.';
+  return new Promise((resolve, reject) => {
+    // stream-json + partial messages = 토큰 단위 델타 → 실시간 진행 표시 가능
+    const cp = spawn('claude', ['-p', guarded, '--disallowedTools', 'Write,Edit,Bash,Read,Glob,Grep',
+      '--output-format', 'stream-json', '--verbose', '--include-partial-messages'],
+      { stdio: ['ignore', 'pipe', 'ignore'] });
+    let buf = '', acc = '';
+    cp.stdout.on('data', (d) => {
+      buf += d.toString();
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1);
+        if (!line.trim()) continue;
+        try {
+          const ev: any = JSON.parse(line);
+          if (ev.type === 'stream_event' && ev.event?.type === 'content_block_delta' && ev.event.delta?.type === 'text_delta') {
+            acc += ev.event.delta.text; onChunk(acc);
+          }
+        } catch { /* 부분 라인/비JSON 무시 */ }
+      }
+    });
+    cp.on('close', () => {
+      let html = stripFence(acc);
+      if (!/<!doctype|<html/i.test(html)) html = `<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>\n${html}\n</body></html>`;
+      resolve(html);
+    });
+    cp.on('error', reject);
+  });
 }
 
 // 자연어 → 완성 HTML 문자열. domainBlock 이 있으면 도메인(이미지 RAG) 그라운딩을 주입.

@@ -169,21 +169,20 @@ function addMsg(text, who){ const d=document.createElement('div'); d.className='
 function showWorkspace(){ $('#landing').style.display='none'; $('#workspace').classList.add('on'); }
 function refresh(url){ frame.src = API + url + '?t=' + Date.now(); }
 
-async function create(){
+// 스트리밍 생성 — 동그라미 대신 실시간 진행(단계 + 작성 분량) 표시
+function create(){
   const prompt = promptEl.value.trim(); if(!prompt) return;
   showWorkspace();
   addMsg(prompt, 'me');
-  const working = addMsg('<span class="spin"></span> 사이트를 만들고 있어요…', 'ai work');
+  const working = addMsg('<span class="spin"></span> 요청 이해 중…', 'ai work');
   statusEl.textContent = '생성 중…';
-  try {
-    const r = await fetch(API+'/create', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({prompt})});
-    const d = await r.json();
-    if(d.error){ working.className='msg ai'; working.textContent='에러: '+d.error; return; }
-    siteId = d.id;
-    working.className='msg ai'; working.textContent='✅ 사이트를 만들었어요. 오른쪽에서 확인하고, 바꾸고 싶은 걸 말해보세요.';
-    statusEl.textContent = '미리보기 · ' + siteId;
-    refresh(d.previewUrl);
-  } catch(e){ working.className='msg ai'; working.textContent='연결 실패: 에이전트 서버(/serve)가 켜져 있나요? '+e; }
+  promptEl.value=''; go.disabled=true;
+  let finished = false;
+  const es = new EventSource(API+'/create-stream?prompt='+encodeURIComponent(prompt));
+  es.addEventListener('status', (e)=>{ const d=JSON.parse(e.data); working.innerHTML='<span class="spin"></span> '+d.text; });
+  es.addEventListener('progress', (e)=>{ const d=JSON.parse(e.data); working.innerHTML='<span class="spin"></span> '+d.stage+' <span style="opacity:.7">('+d.chars.toLocaleString()+'자 작성)</span>'; statusEl.textContent=d.stage; });
+  es.addEventListener('done', (e)=>{ const d=JSON.parse(e.data); finished=true; siteId=d.id; working.className='msg ai'; working.textContent='✅ 만들었어요. 바꾸고 싶은 걸 말해보세요.'; statusEl.textContent='미리보기 · '+d.id; refresh(d.previewUrl); es.close(); });
+  es.addEventListener('error', (ev)=>{ const e=ev; try{const d=JSON.parse(e.data); working.className='msg ai'; working.textContent='에러: '+d.error;}catch(_){ if(!finished){ working.className='msg ai'; working.textContent='연결 실패: 에이전트 서버가 켜져 있나요?'; } } es.close(); });
 }
 
 async function edit(){

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>볕드는 자리 · 동네 카페</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gothic+A1:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#f5efe6;
+    --paper:#fbf7f0;
+    --ink:#2c2620;
+    --muted:#7a6f60;
+    --bean:#5a3a26;
+    --bean-deep:#3a241a;
+    --sage:#7c8a6b;
+    --sage-deep:#5b6a4c;
+    --clay:#c9764f;
+    --line:#e3d8c7;
+    --shadow:0 18px 40px -24px rgba(58,36,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Gothic A1',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Gowun Batang',serif}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+
+  /* HEADER */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(10px);
+    background:rgba(245,239,230,.82);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  header.nav.scrolled{border-color:var(--line);box-shadow:0 6px 20px -18px rgba(58,36,26,.6)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:1.18rem;letter-spacing:-.02em}
+  .brand .dot{width:30px;height:30px;border-radius:50% 50% 50% 8px;background:linear-gradient(150deg,var(--clay),var(--bean));box-shadow:inset 0 -4px 8px rgba(0,0,0,.18)}
+  .nav-links{display:flex;gap:30px;align-items:center}
+  .nav-links a{font-size:.94rem;color:var(--muted);font-weight:500;position:relative;transition:color .2s}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a::after{content:'';position:absolute;left:0;bottom:-6px;width:0;height:2px;background:var(--clay);transition:width .25s}
+  .nav-links a:hover::after{width:100%}
+  .btn{
+    cursor:pointer;border:none;font-family:inherit;font-weight:700;
+    border-radius:999px;padding:11px 22px;font-size:.92rem;
+    background:var(--bean-deep);color:#fdf6ec;transition:transform .15s, background .2s, box-shadow .2s;
+  }
+  .btn:hover{transform:translateY(-2px);background:var(--bean);box-shadow:0 10px 22px -12px var(--bean)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn.ghost:hover{background:var(--ink);color:var(--paper);box-shadow:none}
+  .nav-toggle{display:none;background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--ink)}
+
+  /* HERO */
+  .hero{position:relative;overflow:hidden;padding:74px 0 90px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sage-deep);font-weight:700;margin-bottom:20px}
+  .eyebrow .ln{width:34px;height:1.5px;background:var(--sage-deep)}
+  .hero h1{font-size:clamp(2.5rem,6vw,4.2rem);line-height:1.05;font-weight:700;letter-spacing:-.03em;margin-bottom:22px}
+  .hero h1 em{font-style:normal;color:var(--clay)}
+  .hero p.lead{font-size:1.12rem;color:var(--muted);max-width:30rem;margin-bottom:32px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .hero-meta{margin-top:38px;display:flex;gap:30px;flex-wrap:wrap}
+  .hero-meta .m b{display:block;font-size:1.5rem;font-weight:800;font-family:'Gowun Batang',serif}
+  .hero-meta .m span{font-size:.84rem;color:var(--muted)}
+  .hero-art{position:relative;aspect-ratio:4/5;border-radius:26px;overflow:hidden;box-shadow:var(--shadow)}
+  .hero-art .cup{position:absolute;inset:0;background:
+    radial-gradient(120% 90% at 70% 20%, #d8c3a5 0%, #b99873 38%, #7a5436 75%, #4a3220 100%);}
+  .hero-art .steam{position:absolute;left:50%;top:18%;transform:translateX(-50%);display:flex;gap:14px}
+  .hero-art .steam i{display:block;width:7px;height:64px;background:linear-gradient(to top,rgba(255,255,255,.55),rgba(255,255,255,0));border-radius:50%;filter:blur(2px);animation:steam 3.4s ease-in-out infinite}
+  .hero-art .steam i:nth-child(2){animation-delay:.7s;height:80px}
+  .hero-art .steam i:nth-child(3){animation-delay:1.3s}
+  @keyframes steam{0%{opacity:0;transform:translateY(12px) scaleY(.7)}40%{opacity:.9}100%{opacity:0;transform:translateY(-30px) scaleY(1.25)}}
+  .hero-art .saucer{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);width:62%;height:34%;border-radius:50%;background:linear-gradient(#fff8ee,#e8d9c2);box-shadow:0 22px 30px -18px rgba(0,0,0,.4)}
+  .hero-art .mug{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);width:42%;height:38%;border-radius:18px 18px 60px 60px/14px 14px 80px 80px;background:linear-gradient(160deg,#fffdf8,#efe3d0);box-shadow:inset 0 -10px 18px rgba(0,0,0,.08)}
+  .hero-art .coffee{position:absolute;left:50%;bottom:54%;transform:translateX(-50%);width:33%;height:8%;border-radius:50%;background:radial-gradient(#6f4426,#3a2114)}
+  .badge-float{position:absolute;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);font-size:.86rem;font-weight:600}
+  .badge-float.b1{top:24px;right:-10px}
+  .badge-float.b2{bottom:30px;left:-14px}
+  .badge-float small{display:block;color:var(--muted);font-weight:500;font-size:.74rem}
+
+  .section{padding:88px 0}
+  .section-head{max-width:40rem;margin-bottom:46px}
+  .section-head .eyebrow{margin-bottom:14px}
+  .section-head h2{font-size:clamp(1.9rem,4vw,2.7rem);font-weight:700;letter-spacing:-.02em;line-height:1.12}
+  .section-head p{color:var(--muted);margin-top:14px;font-size:1.04rem}
+
+  /* STORY */
+  .story{background:var(--paper)}
+  .story-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .story-card{background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:30px 26px;transition:transform .25s, box-shadow .25s}
+  .story-card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+  .story-card .ico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;margin-bottom:18px;background:rgba(124,138,107,.16)}
+  .story-card h3{font-size:1.18rem;margin-bottom:8px;font-weight:700}
+  .story-card p{color:var(--muted);font-size:.95rem}
+
+  /* MENU */
+  .menu-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:34px}
+  .menu-tab{cursor:pointer;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-family:inherit;font-weight:600;font-size:.92rem;padding:9px 20px;border-radius:999px;transition:all .2s}
+  .menu-tab.active{background:var(--bean-deep);border-color:var(--bean-deep);color:#fdf6ec}
+  .menu-tab:hover:not(.active){border-color:var(--bean);color:var(--ink)}
+  .menu-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 46px}
+  .menu-item{display:flex;align-items:baseline;gap:12px;padding:16px 4px;border-bottom:1px dashed var(--line);animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .menu-item .nm{font-weight:700;font-size:1.05rem;white-space:nowrap}
+  .menu-item .tag{font-size:.68rem;background:var(--clay);color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;letter-spacing:.03em}
+  .menu-item .ds{flex:1;border-bottom:1px dotted var(--line);transform:translateY(-4px);min-width:8px}
+  .menu-item .pr{font-family:'Gowun Batang',serif;font-weight:700;white-space:nowrap}
+  .menu-item .dsc{flex-basis:100%;font-size:.84rem;color:var(--muted);margin-top:2px}
+
+  /* GALLERY / VISIT split */
+  .visit{background:linear-gradient(160deg,var(--bean-deep),var(--bean));color:#f3e7d6}
+  .visit-grid{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+  .visit h2{color:#fff}
+  .visit .eyebrow{color:#e3b48f}
+  .visit .eyebrow .ln{background:#e3b48f}
+  .info-row{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.14)}
+  .info-row .k{width:96px;flex-shrink:0;color:#d9b89a;font-weight:700;font-size:.92rem}
+  .info-row .v{font-size:1rem}
+  .info-row .v small{display:block;color:#cdb59c;font-size:.82rem;margin-top:2px}
+  .hours-now{display:inline-flex;align-items:center;gap:8px;background:rgba(124,138,107,.3);border:1px solid rgba(255,255,255,.18);padding:6px 14px;border-radius:999px;font-size:.86rem;font-weight:600;margin-top:6px}
+  .hours-now .pulse{width:9px;height:9px;border-radius:50%;background:#8fd694;box-shadow:0 0 0 0 rgba(143,214,148,.7);animation:pulse 2s infinite}
+  .hours-now.closed .pulse{background:#e08a6e;animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(143,214,148,.7)}70%{box-shadow:0 0 0 10px rgba(143,214,148,0)}100%{box-shadow:0 0 0 0 rgba(143,214,148,0)}}
+
+  /* RESERVE FORM */
+  .reserve-card{background:var(--paper);border-radius:24px;padding:34px;box-shadow:0 30px 60px -30px rgba(0,0,0,.5);color:var(--ink)}
+  .reserve-card h3{font-size:1.4rem;margin-bottom:6px}
+  .reserve-card .sub{color:var(--muted);font-size:.92rem;margin-bottom:22px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:.84rem;font-weight:700;margin-bottom:7px}
+  .field input,.field select,.field textarea{
+    width:100%;font-family:inherit;font-size:.96rem;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);transition:border-color .2s, box-shadow .2s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--clay);box-shadow:0 0 0 3px rgba(201,118,79,.15)}
+  .field.err input,.field.err select{border-color:#d9573c}
+  .field .msg{color:#d9573c;font-size:.78rem;margin-top:5px;font-weight:600}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{cursor:pointer;border:1.5px solid var(--line);background:#fff;padding:8px 14px;border-radius:10px;font-size:.88rem;font-weight:600;font-family:inherit;transition:all .18s}
+  .chip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+  .submit-ok{background:rgba(124,138,107,.15);border:1px solid var(--sage);border-radius:14px;padding:22px;text-align:center;animation:fade .4s}
+  .submit-ok .big{font-size:2.2rem}
+  .submit-ok h4{font-size:1.2rem;margin:8px 0 4px}
+  .submit-ok p{color:var(--muted);font-size:.92rem}
+  .booking-list{margin-top:18px}
+  .booking-list .bl-head{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .booking{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:.9rem;animation:fade .3s}
+  .booking .x{cursor:pointer;border:none;background:none;color:var(--muted);font-size:1.2rem;line-height:1;padding:2px 6px;border-radius:6px}
+  .booking .x:hover{color:#d9573c;background:rgba(217,87,60,.1)}
+
+  /* FOOTER */
+  footer{background:var(--bean-deep);color:#cdb59c;padding:54px 0 30px}
+  .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:30px;margin-bottom:34px}
+  footer .brand{color:#fdf6ec}
+  footer h5{color:#f3e7d6;font-size:.92rem;margin-bottom:14px;letter-spacing:.04em}
+  footer a{display:block;color:#cdb59c;font-size:.9rem;margin-bottom:9px;transition:color .2s}
+  footer a:hover{color:#fff}
+  .foot-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.82rem;color:#a8917a}
+  .foot-p{color:#cdb59c;font-size:.9rem;max-width:22rem;margin-top:12px;line-height:1.7}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--paper);padding:13px 22px;border-radius:999px;font-weight:600;font-size:.92rem;box-shadow:var(--shadow);z-index:90;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:880px){
+    .hero-grid,.visit-grid,.story-grid,.menu-list,.foot-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+    .nav-links.open{display:flex;position:absolute;top:70px;left:0;right:0;flex-direction:column;background:var(--paper);padding:20px 22px;gap:18px;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+    .nav-toggle{display:block}
+    .hero-art{max-width:340px;margin:8px auto 0}
+    .section{padding:64px 0}
+    .visit-grid{gap:34px}
+    .row2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+const MENU = {
+  "시그니처":[
+    {nm:"볕드는 라떼",pr:"6,000",tag:"BEST",dsc:"통카콩 시럽과 고소한 오트밀크의 부드러운 조화"},
+    {nm:"흑임자 크림 라떼",pr:"6,500",dsc:"국산 흑임자를 직접 갈아 올린 시즌 크림"},
+    {nm:"청귤 콜드브루",pr:"6,800",tag:"NEW",dsc:"제주 청귤청과 12시간 콜드브루의 산뜻함"},
+    {nm:"브라운 슈가 아인슈페너",pr:"6,500",dsc:"흑설탕을 직접 졸여 만든 진한 크림"},
+  ],
+  "커피":[
+    {nm:"아메리카노",pr:"4,500",dsc:"매주 볶는 하우스 블렌드 '오후 세시'"},
+    {nm:"카페라떼",pr:"5,000",dsc:""},
+    {nm:"플랫화이트",pr:"5,500",dsc:"진한 리스트레토 더블샷"},
+    {nm:"드립 커피",pr:"6,000",tag:"DAILY",dsc:"바리스타가 고르는 오늘의 싱글 오리진"},
+  ],
+  "논커피·티":[
+    {nm:"말차 라떼",pr:"6,000",dsc:"우지 말차를 격불해 올린 거품"},
+    {nm:"수제 자몽 에이드",pr:"6,500",dsc:""},
+    {nm:"대추 생강차",pr:"5,500",tag:"따뜻",dsc:"하루 푹 끓여낸 겨울 한정"},
+    {nm:"히비스커스 티",pr:"5,000",dsc:""},
+  ],
+  "베이커리":[
+    {nm:"바스크 치즈케이크",pr:"6,500",tag:"BEST",dsc:"매일 아침 한 판만 굽습니다"},
+    {nm:"버터 크루아상",pr:"4,000",dsc:"프랑스산 발효버터 3일 공정"},
+    {nm:"쑥 휘낭시에",pr:"3,500",dsc:""},
+    {nm:"무화과 스콘",pr:"4,200",dsc:"통무화과를 듬뿍"},
+  ],
+};
+
+function Nav({onReserve}){
+  const [scrolled,setScrolled]=useState(false);
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{
+    const h=()=>setScrolled(window.scrollY>20);
+    window.addEventListener('scroll',h);return()=>window.removeEventListener('scroll',h);
+  },[]);
+  const links=[["story","소개"],["menu","메뉴"],["visit","찾아오시는 길"],["reserve","예약"]];
+  return(
+    <header className={"nav"+(scrolled?" scrolled":"")}>
+      <div className="wrap nav-inner">
+        <a href="#top" className="brand"><span className="dot"></span>볕드는 자리</a>
+        <nav className={"nav-links"+(open?" open":"")} onClick={()=>setOpen(false)}>
+          {links.map(([id,t])=><a key={id} href={"#"+id}>{t}</a>)}
+          <button className="btn" onClick={(e)=>{e.preventDefault();onReserve();}}>자리 예약</button>
+        </nav>
+        <button className="nav-toggle" onClick={()=>setOpen(o=>!o)} aria-label="메뉴">{open?"✕":"☰"}</button>
+      </div>
+    </header>
+  );
+}
+
+function Hero({onReserve}){
+  return(
+    <section className="hero" id="top">
+      <div className="wrap hero-grid">
+        <div>
+          <span className="eyebrow"><span className="ln"></span>연남동 골목 · 2015년부터</span>
+          <h1>골목 끝,<br/><em>햇볕</em>이 가장<br/>오래 머무는 자리.</h1>
+          <p className="lead">매주 직접 볶는 원두와 그날 아침 구운 빵. 노트북을 펴도, 책 한 권을 들어도 좋은 우리 동네의 작은 거실입니다.</p>
+          <div className="hero-cta">
+            <button className="btn" onClick={onReserve}>창가 자리 예약하기</button>
+            <a className="btn ghost" href="#menu">메뉴 구경하기</a>
+          </div>
+          <div className="hero-meta">
+            <div className="m"><b>11년</b><span>한 골목을 지킨 시간</span></div>
+            <div className="m"><b>4.9</b><span>단골들의 평점</span></div>
+            <div className="m"><b>매일</b><span>아침 8시 첫 빵</span></div>
+          </div>
+        </div>
+        <div className="hero-art">
+          <div className="cup"></div>
+          <div className="steam"><i></i><i></i><i></i></div>
+          <div className="coffee"></div>
+          <div className="mug"></div>
+          <div className="saucer"></div>
+          <div className="badge-float b1">☕ 오늘의 드립<small>예가체프 코체레</small></div>
+          <div className="badge-float b2">🥐 갓 구운 빵<small>오전 8:00 출시</small></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Story(){
+  const cards=[
+    {ico:"🔥",h:"매주 볶는 원두",p:"가게 안쪽 작은 로스터에서 매주 화요일, 일주일 마실 만큼만 신선하게 볶습니다."},
+    {ico:"🥐",h:"아침에 굽는 빵",p:"발효 반죽을 새벽부터 준비해, 문 여는 8시에 가장 먼저 나오는 따뜻한 베이커리."},
+    {ico:"🪟",h:"오래 머무는 자리",p:"콘센트 넉넉한 창가석과 조용한 안쪽 방. 시간 제한 없이 편하게 머무세요."},
+  ];
+  return(
+    <section className="section story" id="story">
+      <div className="wrap">
+        <div className="section-head">
+          <span className="eyebrow"><span className="ln"></span>우리가 일하는 방식</span>
+          <h2>화려하진 않지만,<br/>매일 같은 정성으로.</h2>
+          <p>유행을 좇기보다, 동네 사람들이 매일 들러도 질리지 않는 한 잔을 만듭니다.</p>
+        </div>
+        <div className="story-grid">
+          {cards.map((c,i)=>(
+            <div className="story-card" key={i}>
+              <div className="ico">{c.ico}</div>
+              <h3>{c.h}</h3>
+              <p>{c.p}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Menu(){
+  const cats=Object.keys(MENU);
+  const [tab,setTab]=useState(cats[0]);
+  return(
+    <section className="section" id="menu">
+      <div className="wrap">
+        <div className="section-head">
+          <span className="eyebrow"><span className="ln"></span>Menu</span>
+          <h2>오늘은 무엇을 드릴까요?</h2>
+          <p>계절마다 조금씩 바뀌는 메뉴. 가격은 모두 부가세 포함입니다.</p>
+        </div>
+        <div className="menu-tabs">
+          {cats.map(c=>(
+            <button key={c} className={"menu-tab"+(tab===c?" active":"")} onClick={()=>setTab(c)}>{c}</button>
+          ))}
+        </div>
+        <div className="menu-list" key={tab}>
+          {MENU[tab].map((m,i)=>(
+            <div className="menu-item" key={i}>
+              <span className="nm">{m.nm}</span>
+              {m.tag&&<span className="tag">{m.tag}</span>}
+              <span className="ds"></span>
+              <span className="pr">{m.pr}</span>
+              {m.dsc&&<span className="dsc">{m.dsc}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function useOpenNow(){
+  // 매일 08:00 ~ 22:00 영업 가정
+  const [state,setState]=useState({open:true,label:""});
+  useEffect(()=>{
+    const tick=()=>{
+      const now=new Date();
+      const h=now.getHours();
+      const isOpen=h>=8&&h<22;
+      setState({open:isOpen,label:isOpen?`지금 영업 중 · 22:00까지`:`영업 종료 · 내일 08:00 오픈`});
+    };
+    tick();const id=setInterval(tick,30000);return()=>clearInterval(id);
+  },[]);
+  return state;
+}
+
+function Visit({children}){
+  const now=useOpenNow();
+  const rows=[
+    ["주소","서울 마포구 동교로 23길 14 1층",""],
+    ["영업시간","매일 08:00 – 22:00","라스트 오더 21:30 · 명절 휴무"],
+    ["전화","02-336-0815",""],
+    ["주차","골목 공영주차장 이용 (도보 2분)",""],
+  ];
+  return(
+    <section className="section visit" id="visit">
+      <div className="wrap visit-grid">
+        <div>
+          <span className="eyebrow"><span className="ln"></span>Visit Us</span>
+          <h2>골목 끝에서<br/>기다리고 있을게요.</h2>
+          <div className={"hours-now"+(now.open?"":" closed")}><span className="pulse"></span>{now.label}</div>
+          <div style={{marginTop:18}}>
+            {rows.map((r,i)=>(
+              <div className="info-row" key={i}>
+                <div className="k">{r[0]}</div>
+                <div className="v">{r[1]}{r[2]&&<small>{r[2]}</small>}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div id="reserve">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+function Reserve({notify}){
+  const empty={name:"",phone:"",date:"",time:"",people:"2",seat:"",note:""};
+  const [f,setF]=useState(empty);
+  const [errs,setErrs]=useState({});
+  const [done,setDone]=useState(null);
+  const [bookings,setBookings]=useState([]);
+
+  useEffect(()=>{
+    try{const s=localStorage.getItem("cafe_bookings");if(s)setBookings(JSON.parse(s));}catch(e){}
+  },[]);
+  const persist=(list)=>{setBookings(list);try{localStorage.setItem("cafe_bookings",JSON.stringify(list));}catch(e){}};
+
+  const set=(k,v)=>{setF(p=>({...p,[k]:v}));if(errs[k])setErrs(e=>({...e,[k]:null}));};
+
+  const validate=()=>{
+    const e={};
+    if(!f.name.trim())e.name="성함을 입력해 주세요.";
+    if(!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test(f.phone.replace(/\s/g,"")))e.phone="올바른 연락처를 입력해 주세요.";
+    if(!f.date)e.date="날짜를 선택해 주세요.";
+    else{
+      const today=new Date();today.setHours(0,0,0,0);
+      if(new Date(f.date)<today)e.date="오늘 이후로 선택해 주세요.";
+    }
+    if(!f.time)e.time="시간을 선택해 주세요.";
+    if(!f.seat)e.seat="원하는 자리를 골라 주세요.";
+    setErrs(e);return Object.keys(e).length===0;
+  };
+
+  const submit=(ev)=>{
+    ev.preventDefault();
+    if(!validate()){notify("입력 내용을 다시 확인해 주세요 🙏");return;}
+    const rec={...f,id:Date.now()};
+    persist([rec,...bookings]);
+    setDone(rec);
+    setF(empty);
+    notify("예약이 접수되었어요! ☕");
+  };
+
+  const remove=(id)=>{persist(bookings.filter(b=>b.id!==id));notify("예약을 취소했어요.");};
+
+  const times=["09:00","10:00","11:00","13:00","14:00","15:00","16:00","18:00","19:00","20:00"];
+  const seats=[["창가석","🪟"],["안쪽 방","🛋️"],["바 좌석","☕"],["테라스","🌿"]];
+
+  if(done){
+    return(
+      <div className="reserve-card">
+        <div className="submit-ok">
+          <div className="big">🎉</div>
+          <h4>{done.name}님, 예약 완료!</h4>
+          <p>{done.date} {done.time} · {done.people}명 · {done.seat}<br/>확정 안내 문자를 곧 보내드릴게요.</p>
+        </div>
+        <button className="btn" style={{width:"100%",marginTop:18}} onClick={()=>setDone(null)}>새 예약 하기</button>
+        <BookingList bookings={bookings} remove={remove}/>
+      </div>
+    );
+  }
+
+  return(
+    <form className="reserve-card" onSubmit={submit} noValidate>
+      <h3>창가 자리 예약</h3>
+      <p className="sub">원하는 시간에 좋은 자리를 미리 잡아 드릴게요.</p>
+
+      <div className={"field"+(errs.name?" err":"")}>
+        <label>성함</label>
+        <input value={f.name} onChange={e=>set("name",e.target.value)} placeholder="홍길동"/>
+        {errs.name&&<div className="msg">{errs.name}</div>}
+      </div>
+
+      <div className={"field"+(errs.phone?" err":"")}>
+        <label>연락처</label>
+        <input value={f.phone} onChange={e=>set("phone",e.target.value)} placeholder="010-1234-5678"/>
+        {errs.phone&&<div className="msg">{errs.phone}</div>}
+      </div>
+
+      <div className="row2">
+        <div className={"field"+(errs.date?" err":"")}>
+          <label>날짜</label>
+          <input type="date" value={f.date} onChange={e=>set("date",e.target.value)}/>
+          {errs.date&&<div className="msg">{errs.date}</div>}
+        </div>
+        <div className={"field"+(errs.time?" err":"")}>
+          <label>시간</label>
+          <select value={f.time} onChange={e=>set("time",e.target.value)}>
+            <option value="">선택</option>
+            {times.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+          {errs.time&&<div className="msg">{errs.time}</div>}
+        </div>
+      </div>
+
+      <div className="field">
+        <label>인원</label>
+        <select value={f.people} onChange={e=>set("people",e.target.value)}>
+          {[1,2,3,4,5,6].map(n=><option key={n} value={n}>{n}명{n===6?" 이상":""}</option>)}
+        </select>
+      </div>
+
+      <div className={"field"+(errs.seat?" err":"")}>
+        <label>원하는 자리</label>
+        <div className="chips">
+          {seats.map(([s,ic])=>(
+            <button type="button" key={s} className={"chip"+(f.seat===s?" on":"")} onClick={()=>set("seat",s)}>{ic} {s}</button>
+          ))}
+        </div>
+        {errs.seat&&<div className="msg">{errs.seat}</div>}
+      </div>
+
+      <div className="field">
+        <label>요청사항 <span style={{fontWeight:400,color:"var(--muted)"}}>(선택)</span></label>
+        <textarea rows="2" value={f.note} onChange={e=>set("note",e.target.value)} placeholder="아기 의자가 필요해요 / 조용한 자리 부탁드려요"></textarea>
+      </div>
+
+      <button className="btn" type="submit" style={{width:"100%",padding:"14px"}}>예약 신청하기</button>
+      <BookingList bookings={bookings} remove={remove}/>
+    </form>
+  );
+}
+
+function BookingList({bookings,remove}){
+  if(!bookings.length)return null;
+  return(
+    <div className="booking-list">
+      <div className="bl-head">내 예약 ({bookings.length})</div>
+      {bookings.map(b=>(
+        <div className="booking" key={b.id}>
+          <span>📅 {b.date} {b.time} · {b.people}명 · {b.seat}</span>
+          <button className="x" onClick={()=>remove(b.id)} aria-label="취소">×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Footer(){
+  return(
+    <footer>
+      <div className="wrap">
+        <div className="foot-grid">
+          <div>
+            <div className="brand" style={{color:"#fdf6ec"}}><span className="dot"></span>볕드는 자리</div>
+            <p className="foot-p">연남동 골목 끝, 햇볕이 가장 오래 머무는 작은 카페. 매주 볶은 원두와 아침에 구운 빵으로 동네의 하루를 엽니다.</p>
+          </div>
+          <div>
+            <h5>둘러보기</h5>
+            <a href="#story">소개</a>
+            <a href="#menu">메뉴</a>
+            <a href="#visit">찾아오시는 길</a>
+            <a href="#reserve">예약</a>
+          </div>
+          <div>
+            <h5>소식</h5>
+            <a href="#">@bytdeuneunjari 인스타그램</a>
+            <a href="#">네이버 플레이스</a>
+            <a href="#">원두 정기구독 안내</a>
+          </div>
+        </div>
+        <div className="foot-bottom">
+          <span>© 2026 볕드는 자리 · 서울 마포구 동교로23길 14</span>
+          <span>매일 08:00 – 22:00 · 02-336-0815</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function App(){
+  const [toast,setToast]=useState("");
+  const tRef=useRef();
+  const notify=(msg)=>{
+    setToast(msg);
+    clearTimeout(tRef.current);
+    tRef.current=setTimeout(()=>setToast(""),2600);
+  };
+  const goReserve=()=>{document.getElementById("reserve").scrollIntoView({behavior:"smooth"});};
+  return(
+    <>
+      <Nav onReserve={goReserve}/>
+      <Hero onReserve={goReserve}/>
+      <Story/>
+      <Menu/>
+      <Visit>
+        <Reserve notify={notify}/>
+      </Visit>
+      <Footer/>
+      <div className={"toast"+(toast?" show":"")}>{toast}</div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

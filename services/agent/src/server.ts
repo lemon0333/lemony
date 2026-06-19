@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { handleEdit } from './edit-loop.ts';
-import { createSite, editHtml } from './generate.ts';
+import { createSite, editHtml, generateHtmlStreaming } from './generate.ts';
 import { startOAuth, handleCallback, demoLogin, logout, userFromReq, authStatus } from './auth.ts';
 
 // lemony 에이전트 HTTP 서버.
@@ -98,6 +98,31 @@ const server = http.createServer(async (req, res) => {
     }
     out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     return json(res, 200, { sites: out.slice(0, 50) });
+  }
+
+  // 스트리밍 생성(SSE) — 진행 상황을 실시간으로 (동그라미 대신 단계/분량 표시)
+  if (req.method === 'GET' && url.startsWith('/create-stream')) {
+    const prompt = new URL(url, 'http://x').searchParams.get('prompt') || '';
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive', ...CORS });
+    const send = (ev: string, data: any) => res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
+    if (!prompt) { send('error', { error: 'prompt 필요' }); res.end(); return; }
+    send('status', { text: '요청 이해 중…' });
+    try {
+      const html = await generateHtmlStreaming(prompt, '', (acc) => {
+        const chars = acc.length;
+        const stage = chars < 300 ? '디자인 구성 중…' : '코드 생성 중…';
+        send('progress', { stage, chars });
+      });
+      send('status', { text: '마무리…' });
+      const user = userFromReq(req);
+      const id = 'site_' + Date.now().toString(36);
+      const dir = path.join(SITES, id); fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf-8');
+      writeMeta(id, { owner: user?.id || 'anon', name: prompt.slice(0, 40), prompt, createdAt: Date.now(), updatedAt: Date.now() });
+      send('done', { id, previewUrl: `/preview/${id}/` });
+    } catch (err: any) { send('error', { error: err?.message || String(err) }); }
+    res.end();
+    return;
   }
 
   if (req.method === 'POST' && url === '/create') {

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>모여라 스터디 · 함께 자라는 사람들</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f4ee; --bg-soft:#efe9dd; --surface:#fffdf8; --ink:#262017; --ink-soft:#6b6052;
+    --line:#e3dccb; --accent:#c2410c; --accent-soft:#fde7d6; --ok:#15803d;
+    --shadow:0 1px 2px rgba(38,32,23,.06), 0 12px 30px -18px rgba(38,32,23,.35);
+    --r:18px;
+  }
+  html[data-theme="dark"]{
+    --bg:#161310; --bg-soft:#1f1a15; --surface:#221d18; --ink:#f3ece0; --ink-soft:#a99e8d;
+    --line:#352d24; --accent:#fb923c; --accent-soft:#3a2415; --ok:#4ade80;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -22px rgba(0,0,0,.8);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.65;
+    -webkit-font-smoothing:antialiased; transition:background .35s ease,color .35s ease;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  a{color:inherit;text-decoration:none}
+
+  /* header */
+  header{position:sticky;top:0;z-index:30;backdrop-filter:saturate(140%) blur(10px);
+    background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:1.12rem}
+  .brand .dot{width:13px;height:13px;border-radius:50% 50% 50% 2px;background:var(--accent);
+    box-shadow:0 0 0 4px var(--accent-soft)}
+  .nav-links{display:flex;gap:26px;font-size:.92rem;color:var(--ink-soft)}
+  .nav-links a:hover{color:var(--accent)}
+  .toggle{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink);padding:8px 13px;border-radius:999px;cursor:pointer;font-size:.85rem;font-weight:600;
+    transition:transform .15s ease,border-color .2s}
+  .toggle:hover{transform:translateY(-1px);border-color:var(--accent)}
+  @media(max-width:680px){.nav-links{display:none}}
+
+  /* hero */
+  .hero{padding:84px 0 56px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:-30% 50% auto -10%;height:460px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,var(--accent-soft),transparent 62%);opacity:.7;filter:blur(8px)}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:6px 13px;border-radius:999px;position:relative}
+  h1{font-size:clamp(2.1rem,5.4vw,3.5rem);line-height:1.12;letter-spacing:-.035em;margin:20px 0 16px;font-weight:850;position:relative}
+  h1 em{font-style:normal;color:var(--accent);position:relative}
+  .lead{font-size:1.12rem;color:var(--ink-soft);max-width:540px;position:relative}
+  .cta-row{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap;position:relative}
+  .btn{padding:13px 24px;border-radius:12px;font-weight:700;font-size:.97rem;cursor:pointer;border:1px solid transparent;
+    transition:transform .15s ease,box-shadow .2s}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:var(--shadow)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .stats{display:flex;gap:34px;margin-top:46px;position:relative;flex-wrap:wrap}
+  .stat b{display:block;font-size:1.7rem;font-weight:850;letter-spacing:-.02em}
+  .stat span{font-size:.86rem;color:var(--ink-soft)}
+
+  /* sections */
+  section.block{padding:58px 0}
+  .sec-head{margin-bottom:32px}
+  .sec-head h2{font-size:1.7rem;letter-spacing:-.03em;font-weight:820}
+  .sec-head p{color:var(--ink-soft);margin-top:6px}
+
+  .fields{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.fields{grid-template-columns:1fr}}
+  .field-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;
+    box-shadow:var(--shadow);transition:transform .2s ease,border-color .2s}
+  .field-card:hover{transform:translateY(-4px);border-color:var(--accent)}
+  .field-ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:1.4rem;
+    background:var(--accent-soft);margin-bottom:16px}
+  .field-card h3{font-size:1.15rem;letter-spacing:-.02em;margin-bottom:7px}
+  .field-card p{font-size:.93rem;color:var(--ink-soft)}
+  .field-meta{margin-top:16px;font-size:.8rem;font-weight:700;color:var(--accent);display:flex;gap:6px;align-items:center}
+
+  /* apply */
+  .apply-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:30px;align-items:start}
+  @media(max-width:840px){.apply-grid{grid-template-columns:1fr}}
+  form{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
+  label{display:block;font-size:.83rem;font-weight:700;margin:14px 0 6px;color:var(--ink)}
+  label:first-of-type{margin-top:0}
+  input,select,textarea{width:100%;background:var(--bg-soft);border:1px solid var(--line);border-radius:11px;
+    padding:11px 13px;font:inherit;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  textarea{resize:vertical;min-height:74px}
+  .err{color:#dc2626;font-size:.78rem;margin-top:5px;font-weight:600}
+  form .btn-primary{width:100%;margin-top:20px}
+
+  .applicants{display:flex;flex-direction:column;gap:12px}
+  .app-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .app-top h3{font-size:1.05rem}
+  .count-pill{font-size:.78rem;font-weight:700;background:var(--accent-soft);color:var(--accent);padding:4px 11px;border-radius:999px}
+  .app-card{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .avatar{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:grid;place-items:center;font-weight:800;
+    color:#fff;font-size:1rem}
+  .app-body{flex:1;min-width:0}
+  .app-body .nm{font-weight:750}
+  .app-body .tag{display:inline-block;font-size:.74rem;font-weight:700;color:var(--accent);background:var(--accent-soft);
+    padding:2px 9px;border-radius:999px;margin-left:7px;vertical-align:middle}
+  .app-body .word{font-size:.9rem;color:var(--ink-soft);margin-top:3px;word-break:break-word}
+  .del{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:1.15rem;line-height:1;
+    padding:4px;border-radius:8px;transition:color .2s,background .2s}
+  .del:hover{color:#dc2626;background:color-mix(in srgb,#dc2626 12%,transparent)}
+  .empty{text-align:center;color:var(--ink-soft);border:1.5px dashed var(--line);border-radius:14px;padding:34px 16px;font-size:.92rem}
+
+  footer{border-top:1px solid var(--line);padding:40px 0;margin-top:30px;color:var(--ink-soft);font-size:.9rem}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const FIELDS = [
+  { key:"frontend", emoji:"🧩", title:"프론트엔드 스터디", desc:"React·TypeScript로 작은 토이 프로젝트를 매주 하나씩. 코드 리뷰로 같이 성장해요.", meta:"매주 화 · 온라인", color:"#c2410c" },
+  { key:"algorithm", emoji:"🧠", title:"알고리즘 라이브", desc:"백준·프로그래머스 문제를 함께 풀고 풀이를 발표합니다. 코테 대비에 딱.", meta:"매주 목 · 강남 스터디룸", color:"#7c3aed" },
+  { key:"design", emoji:"🎨", title:"UX/제품 디자인", desc:"피그마로 실전 화면을 만들고 서로 피드백. 포트폴리오 한 장씩 채워가요.", meta:"격주 토 · 온라인", color:"#0d9488" },
+];
+
+function useTheme(){
+  const [theme,setTheme] = useState(()=> localStorage.getItem("moyeo-theme") || "light");
+  useEffect(()=>{
+    document.documentElement.setAttribute("data-theme",theme);
+    localStorage.setItem("moyeo-theme",theme);
+  },[theme]);
+  return [theme, ()=>setTheme(t=> t==="light"?"dark":"light")];
+}
+
+function Header({theme,toggle}){
+  return (
+    <header>
+      <div className="wrap nav">
+        <a href="#top" className="brand"><span className="dot"></span>모여라 스터디</a>
+        <nav className="nav-links">
+          <a href="#about">소개</a>
+          <a href="#fields">모집 분야</a>
+          <a href="#apply">신청</a>
+        </nav>
+        <button className="toggle" onClick={toggle} aria-label="테마 전환">
+          {theme==="light" ? "🌙 다크" : "☀️ 라이트"}
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function Hero(){
+  return (
+    <section className="hero" id="top">
+      <div className="wrap">
+        <span className="eyebrow">2026 봄 시즌 모집중</span>
+        <h1>혼자 하면 작심삼일,<br/><em>같이 하면</em> 결국 해내요.</h1>
+        <p className="lead">관심사가 비슷한 사람들과 매주 모여 꾸준함을 만듭니다. 부담 없이, 그러나 진짜로 끝까지. 지금 함께할 동료를 찾고 있어요.</p>
+        <div className="cta-row">
+          <a href="#apply" className="btn btn-primary">신청하러 가기</a>
+          <a href="#fields" className="btn btn-ghost">분야 둘러보기</a>
+        </div>
+        <div className="stats">
+          <div className="stat"><b>312명</b><span>지금까지 함께한 멤버</span></div>
+          <div className="stat"><b>27개</b><span>완주한 스터디</span></div>
+          <div className="stat"><b>92%</b><span>시즌 완주율</span></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function About(){
+  return (
+    <section className="block" id="about">
+      <div className="wrap sec-head">
+        <h2>이런 모임이에요</h2>
+        <p>거창한 각오 대신 작은 약속을 지키는 곳. 발표·기록·피드백 세 가지 루틴으로 굴러갑니다.</p>
+      </div>
+      <div className="wrap fields">
+        {[
+          {emoji:"🤝",t:"느슨하지만 분명한 약속",d:"주 1회 모임, 빠지면 미리 공유. 강압은 없지만 책임은 함께 나눠요."},
+          {emoji:"📝",t:"기록이 남는 활동",d:"매주 배운 점을 한 줄씩 노션에 정리. 시즌이 끝나면 나만의 성장 로그가 됩니다."},
+          {emoji:"🌱",t:"초보 환영",d:"경력보다 꾸준함이 기준. 처음이라도 같이 시작할 짝꿍을 붙여드려요."},
+        ].map((c,i)=>(
+          <div className="field-card" key={i}>
+            <div className="field-ico">{c.emoji}</div>
+            <h3>{c.t}</h3>
+            <p>{c.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Fields(){
+  return (
+    <section className="block" id="fields" style={{background:"var(--bg-soft)"}}>
+      <div className="wrap sec-head">
+        <h2>모집 분야 3</h2>
+        <p>원하는 분야를 고르고 아래에서 바로 신청해 보세요.</p>
+      </div>
+      <div className="wrap fields">
+        {FIELDS.map(f=>(
+          <div className="field-card" key={f.key}>
+            <div className="field-ico" style={{background:"color-mix(in srgb,"+f.color+" 16%,transparent)"}}>{f.emoji}</div>
+            <h3>{f.title}</h3>
+            <p>{f.desc}</p>
+            <div className="field-meta">📍 {f.meta}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const KEY = "moyeo-applicants";
+
+function ApplyForm({onAdd}){
+  const [name,setName] = useState("");
+  const [field,setField] = useState("");
+  const [word,setWord] = useState("");
+  const [errs,setErrs] = useState({});
+
+  function submit(e){
+    e.preventDefault();
+    const next = {};
+    if(!name.trim()) next.name = "이름을 입력해 주세요.";
+    else if(name.trim().length>20) next.name = "이름은 20자 이내로 적어 주세요.";
+    if(!field) next.field = "관심 분야를 선택해 주세요.";
+    if(word.trim().length>80) next.word = "한마디는 80자 이내로 부탁해요.";
+    setErrs(next);
+    if(Object.keys(next).length) return;
+    onAdd({
+      id: Date.now()+"-"+Math.floor(performance.now()),
+      name:name.trim(),
+      field,
+      word:word.trim() || "잘 부탁드립니다! 🙌",
+    });
+    setName(""); setField(""); setWord(""); setErrs({});
+  }
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <label htmlFor="nm">이름</label>
+      <input id="nm" value={name} onChange={e=>setName(e.target.value)} placeholder="예) 김레모니" />
+      {errs.name && <div className="err">{errs.name}</div>}
+
+      <label htmlFor="fd">관심 분야</label>
+      <select id="fd" value={field} onChange={e=>setField(e.target.value)}>
+        <option value="">— 분야를 선택하세요 —</option>
+        {FIELDS.map(f=> <option key={f.key} value={f.title}>{f.emoji} {f.title}</option>)}
+      </select>
+      {errs.field && <div className="err">{errs.field}</div>}
+
+      <label htmlFor="wd">한마디 (선택)</label>
+      <textarea id="wd" value={word} onChange={e=>setWord(e.target.value)} placeholder="각오나 자기소개를 자유롭게 남겨주세요." />
+      {errs.word && <div className="err">{errs.word}</div>}
+
+      <button type="submit" className="btn btn-primary">신청서 제출하기</button>
+    </form>
+  );
+}
+
+function Applicants({list,onDelete}){
+  const palette = ["#c2410c","#7c3aed","#0d9488","#2563eb","#db2777","#ca8a04"];
+  return (
+    <div>
+      <div className="app-top">
+        <h3>신청 명단</h3>
+        <span className="count-pill">{list.length}명 신청</span>
+      </div>
+      {list.length===0 ? (
+        <div className="empty">아직 신청자가 없어요.<br/>첫 번째 멤버가 되어보세요! ✨</div>
+      ) : (
+        <div className="applicants">
+          {list.map((a,i)=>(
+            <div className="app-card" key={a.id}>
+              <div className="avatar" style={{background:palette[i%palette.length]}}>{a.name.slice(0,1)}</div>
+              <div className="app-body">
+                <div className="nm">{a.name}<span className="tag">{a.field.replace(/^\S+\s/,"")}</span></div>
+                <div className="word">{a.word}</div>
+              </div>
+              <button className="del" onClick={()=>onDelete(a.id)} aria-label="삭제" title="삭제">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Apply(){
+  const [list,setList] = useState(()=>{
+    try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch{ return []; }
+  });
+  useEffect(()=>{ localStorage.setItem(KEY, JSON.stringify(list)); },[list]);
+
+  const add = a => setList(prev=>[a,...prev]);
+  const del = id => setList(prev=>prev.filter(x=>x.id!==id));
+
+  return (
+    <section className="block" id="apply">
+      <div className="wrap sec-head">
+        <h2>지금 신청하기</h2>
+        <p>제출하면 아래 명단에 바로 추가돼요. (이 브라우저에 자동 저장됩니다)</p>
+      </div>
+      <div className="wrap apply-grid">
+        <ApplyForm onAdd={add} />
+        <Applicants list={list} onDelete={del} />
+      </div>
+    </section>
+  );
+}
+
+function Footer(){
+  return (
+    <footer>
+      <div className="wrap foot">
+        <span>© 2026 모여라 스터디 — 꾸준함을 함께 만드는 사람들</span>
+        <span>문의 · hello@moyeo.study</span>
+      </div>
+    </footer>
+  );
+}
+
+function App(){
+  const [theme,toggle] = useTheme();
+  return (
+    <React.Fragment>
+      <Header theme={theme} toggle={toggle} />
+      <main>
+        <Hero />
+        <About />
+        <Fields />
+        <Apply />
+      </main>
+      <Footer />
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

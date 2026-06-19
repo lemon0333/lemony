@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>밀과달 · 동네 빵집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --crust:#5c3a21; --crust-soft:#7a5236; --crema:#fbf3e6; --crema-2:#f3e4cd;
+    --butter:#f0b94b; --jam:#b5462f; --leaf:#6f7d4e; --ink:#33271c;
+    --line:#e6d4ba; --shadow:rgba(92,58,33,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Gowun Dodum',system-ui,sans-serif;
+    color:var(--ink); background:var(--crema);
+    -webkit-font-smoothing:antialiased; line-height:1.65;
+  }
+  h1,h2,h3,.serif{font-family:'Gowun Batang',serif}
+  img{max-width:100%;display:block}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+
+  /* header */
+  header.site{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(8px);
+    background:rgba(251,243,230,.82);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Gowun Batang';font-weight:700;font-size:1.25rem;color:var(--crust)}
+  .brand .mark{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--butter),var(--jam));display:grid;place-items:center;font-size:1.1rem;box-shadow:0 4px 12px var(--shadow)}
+  .nav nav{display:flex;gap:26px;align-items:center}
+  .nav nav a{font-size:.95rem;color:var(--crust-soft);position:relative;padding:4px 0}
+  .nav nav a:hover{color:var(--jam)}
+  .cart-btn{background:var(--crust);color:var(--crema);padding:9px 16px;border-radius:999px;font-size:.9rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px var(--shadow);transition:transform .15s}
+  .cart-btn:hover{transform:translateY(-2px)}
+  .cart-count{background:var(--butter);color:var(--crust);font-weight:700;border-radius:999px;min-width:20px;height:20px;display:grid;place-items:center;font-size:.75rem}
+  .menu-toggle{display:none;font-size:1.6rem;color:var(--crust)}
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;padding:70px 0 80px}
+  .hero:before{content:"";position:absolute;inset:0;background:
+    radial-gradient(40% 60% at 85% 10%,rgba(240,185,75,.28),transparent 60%),
+    radial-gradient(50% 50% at 0% 100%,rgba(181,70,47,.16),transparent 60%);z-index:0}
+  .hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+  .eyebrow{display:inline-block;letter-spacing:.18em;font-size:.78rem;color:var(--jam);text-transform:uppercase;border:1px solid var(--jam);padding:5px 12px;border-radius:999px;margin-bottom:18px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.25;color:var(--crust);margin-bottom:18px}
+  .hero h1 em{font-style:normal;color:var(--jam);position:relative}
+  .hero h1 em:after{content:"";position:absolute;left:0;right:0;bottom:4px;height:10px;background:var(--butter);opacity:.45;z-index:-1}
+  .hero p.lead{font-size:1.08rem;color:var(--crust-soft);max-width:440px;margin-bottom:28px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .btn{padding:13px 24px;border-radius:12px;font-size:.98rem;transition:transform .15s,box-shadow .15s}
+  .btn-pri{background:var(--jam);color:#fff;box-shadow:0 8px 20px rgba(181,70,47,.3)}
+  .btn-pri:hover{transform:translateY(-2px)}
+  .btn-ghost{background:transparent;color:var(--crust);border:1.5px solid var(--crust-soft)}
+  .btn-ghost:hover{background:var(--crema-2)}
+  .hero-card{position:relative}
+  .hero-photo{border-radius:24px;overflow:hidden;box-shadow:0 24px 50px var(--shadow);transform:rotate(-2deg);background:var(--crema-2);aspect-ratio:4/5}
+  .hero-photo .ph{width:100%;height:100%;background:
+    conic-gradient(from 200deg at 50% 40%,#e9c07a,#caa15f,#a8763f,#e9c07a);position:relative}
+  .hero-photo .ph:after{content:"🥐";position:absolute;inset:0;display:grid;place-items:center;font-size:6rem;filter:drop-shadow(0 8px 14px rgba(0,0,0,.2))}
+  .badge-float{position:absolute;background:#fff;border-radius:16px;padding:12px 16px;box-shadow:0 10px 26px var(--shadow);font-size:.85rem}
+  .badge-float.b1{top:-14px;left:-18px;transform:rotate(-4deg)}
+  .badge-float.b2{bottom:24px;right:-16px;transform:rotate(3deg)}
+  .badge-float strong{display:block;font-family:'Gowun Batang';color:var(--jam);font-size:1.1rem}
+
+  /* sections */
+  section{padding:72px 0}
+  .sec-head{text-align:center;max-width:560px;margin:0 auto 44px}
+  .sec-head .eyebrow{margin-bottom:14px}
+  .sec-head h2{font-size:clamp(1.7rem,3.4vw,2.4rem);color:var(--crust);margin-bottom:12px}
+  .sec-head p{color:var(--crust-soft)}
+
+  /* filters + menu */
+  .filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:34px}
+  .chip{padding:9px 18px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:.9rem;color:var(--crust-soft);transition:all .15s}
+  .chip.active{background:var(--crust);color:var(--crema);border-color:var(--crust)}
+  .chip:hover{border-color:var(--crust-soft)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid var(--line);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 36px var(--shadow)}
+  .card .thumb{aspect-ratio:5/4;display:grid;place-items:center;font-size:3.4rem;position:relative}
+  .card .tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.9);color:var(--jam);font-size:.72rem;padding:4px 10px;border-radius:999px;font-weight:700}
+  .card .body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .card h3{font-size:1.15rem;color:var(--crust)}
+  .card .desc{font-size:.88rem;color:var(--crust-soft);flex:1}
+  .card .row{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .price{font-family:'Gowun Batang';font-weight:700;color:var(--jam);font-size:1.1rem}
+  .add{background:var(--crema-2);color:var(--crust);padding:8px 14px;border-radius:10px;font-size:.85rem;transition:background .15s}
+  .add:hover{background:var(--butter)}
+  .soldout{opacity:.55}
+  .soldout .add{background:#eee;color:#999;cursor:not-allowed}
+
+  /* story */
+  .story{background:var(--crust);color:var(--crema)}
+  .story .wrap{display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:center}
+  .story .eyebrow{color:var(--butter);border-color:var(--butter)}
+  .story h2{font-size:clamp(1.7rem,3.4vw,2.4rem);margin-bottom:18px;line-height:1.35}
+  .story p{color:#e9d8bf;margin-bottom:16px;font-size:1.02rem}
+  .stats{display:flex;gap:30px;margin-top:24px}
+  .stats div strong{display:block;font-family:'Gowun Batang';font-size:1.9rem;color:var(--butter)}
+  .stats div span{font-size:.85rem;color:#cdb990}
+  .story-visual{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .story-visual .tile{border-radius:18px;aspect-ratio:1;display:grid;place-items:center;font-size:3rem;background:var(--crust-soft)}
+  .story-visual .tile:nth-child(1){background:#7a5236}
+  .story-visual .tile:nth-child(2){background:#8a5a30;margin-top:24px}
+  .story-visual .tile:nth-child(3){background:#6b4429;margin-bottom:24px}
+  .story-visual .tile:nth-child(4){background:#83532c}
+
+  /* reservation */
+  .reserve .wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:start}
+  .info-list{list-style:none;display:flex;flex-direction:column;gap:18px;margin-top:8px}
+  .info-list li{display:flex;gap:14px;align-items:flex-start}
+  .info-list .ic{width:42px;height:42px;border-radius:12px;background:var(--crema-2);display:grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+  .info-list strong{display:block;color:var(--crust)}
+  .info-list span{font-size:.9rem;color:var(--crust-soft)}
+  form.book{background:#fff;border:1px solid var(--line);border-radius:22px;padding:30px;box-shadow:0 14px 32px var(--shadow)}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:.88rem;color:var(--crust);margin-bottom:7px;font-weight:700}
+  .field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:.95rem;background:var(--crema);transition:border .15s}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--jam)}
+  .field textarea{resize:vertical;min-height:78px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .err{color:var(--jam);font-size:.8rem;margin-top:5px}
+  .ok-msg{background:#eef3e3;border:1px solid var(--leaf);color:var(--leaf);padding:14px 16px;border-radius:12px;font-size:.92rem;margin-bottom:18px}
+  .submitted-list{margin-top:20px;border-top:1px dashed var(--line);padding-top:16px}
+  .submitted-list h4{font-size:.9rem;color:var(--crust-soft);margin-bottom:10px}
+  .res-item{display:flex;justify-content:space-between;align-items:center;background:var(--crema);padding:10px 14px;border-radius:10px;margin-bottom:8px;font-size:.88rem}
+  .res-item button{color:var(--jam);font-size:.8rem}
+
+  /* footer */
+  footer.site{background:var(--ink);color:#d8c6ac;padding:50px 0 30px}
+  footer .top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;margin-bottom:30px}
+  footer .brand{color:var(--crema)}
+  footer .cols{display:flex;gap:54px;flex-wrap:wrap}
+  footer .cols h5{color:var(--butter);font-size:.85rem;margin-bottom:12px;letter-spacing:.05em}
+  footer .cols a,footer .cols p{display:block;font-size:.88rem;margin-bottom:7px;color:#c9b79c}
+  footer .cols a:hover{color:#fff}
+  footer .copy{border-top:1px solid #4a3a29;padding-top:20px;font-size:.8rem;color:#9c8a72;text-align:center}
+
+  /* cart drawer */
+  .overlay{position:fixed;inset:0;background:rgba(40,28,18,.5);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s}
+  .overlay.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:380px;max-width:90vw;background:var(--crema);z-index:100;box-shadow:-12px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .drawer .dh{display:flex;justify-content:space-between;align-items:center;padding:22px;border-bottom:1px solid var(--line)}
+  .drawer .dh h3{color:var(--crust)}
+  .drawer .dh button{font-size:1.4rem;color:var(--crust-soft)}
+  .drawer .items{flex:1;overflow-y:auto;padding:18px 22px}
+  .empty{text-align:center;color:var(--crust-soft);padding:50px 0}
+  .empty .em{font-size:3rem;margin-bottom:10px}
+  .ci{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .ci .em{font-size:2rem;width:48px;height:48px;background:#fff;border-radius:12px;display:grid;place-items:center}
+  .ci .meta{flex:1}
+  .ci .meta strong{display:block;font-size:.95rem;color:var(--crust)}
+  .ci .meta span{font-size:.82rem;color:var(--jam)}
+  .qty{display:flex;align-items:center;gap:8px}
+  .qty button{width:26px;height:26px;border-radius:7px;background:#fff;border:1px solid var(--line);color:var(--crust);font-weight:700;display:grid;place-items:center}
+  .qty span{min-width:18px;text-align:center;font-size:.9rem}
+  .drawer .foot{padding:20px 22px;border-top:1px solid var(--line);background:#fff}
+  .drawer .total{display:flex;justify-content:space-between;font-family:'Gowun Batang';font-weight:700;font-size:1.2rem;color:var(--crust);margin-bottom:16px}
+  .drawer .foot .btn-pri{width:100%;text-align:center}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--crust);color:var(--crema);padding:12px 22px;border-radius:999px;z-index:200;opacity:0;transition:all .3s;font-size:.9rem;box-shadow:0 10px 30px var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:860px){
+    .hero .wrap,.story .wrap,.reserve .wrap{grid-template-columns:1fr;gap:40px}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .nav nav{display:none}
+    .menu-toggle{display:block}
+    .nav nav.open{display:flex;position:absolute;top:68px;left:0;right:0;flex-direction:column;background:var(--crema);padding:18px 22px;border-bottom:1px solid var(--line);gap:14px}
+    .hero-card{max-width:340px;margin:0 auto}
+  }
+  @media(max-width:520px){
+    .grid{grid-template-columns:1fr}
+    .two{grid-template-columns:1fr}
+    .stats{flex-wrap:wrap;gap:18px}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const PRODUCTS = [
+  { id:1, name:"소금빵", cat:"빵", emoji:"🥐", price:3200, desc:"발효 버터를 켜켜이 넣어 구운 겉바속촉 시그니처.", tag:"인기", bg:"#f6e3c2" },
+  { id:2, name:"통밀 캄파뉴", cat:"빵", emoji:"🍞", price:6500, desc:"우리밀 통밀로 36시간 저온 발효한 담백한 식사빵.", tag:"우리밀", bg:"#ecd9b8" },
+  { id:3, name:"크루아상", cat:"빵", emoji:"🥐", price:3800, desc:"매일 아침 손으로 접어 굽는 27겹 결의 정석.", tag:"", bg:"#f3e0bb" },
+  { id:4, name:"딸기 생크림 케이크", cat:"케이크", emoji:"🍰", price:32000, desc:"제철 딸기와 동물성 생크림만으로 완성한 조각 케이크.", tag:"제철", bg:"#f7d9d4" },
+  { id:5, name:"바스크 치즈케이크", cat:"케이크", emoji:"🧀", price:5500, desc:"겉은 까맣게, 속은 부드럽게 구워낸 진한 치즈향.", tag:"", bg:"#f0deb0" },
+  { id:6, name:"흑임자 스콘", cat:"디저트", emoji:"🫓", price:3000, desc:"국산 흑임자를 듬뿍 넣어 고소함이 가득.", tag:"", bg:"#e3dccb" },
+  { id:7, name:"수제 약과", cat:"디저트", emoji:"🍪", price:2500, desc:"조청에 정성껏 졸인 바삭한 우리 동네 약과.", tag:"신메뉴", bg:"#ecd6ad" },
+  { id:8, name:"오늘의 드립커피", cat:"음료", emoji:"☕", price:4000, desc:"빵과 가장 잘 어울리는 산미 적은 원두로 내립니다.", tag:"", bg:"#dcc6a3" },
+  { id:9, name:"플레인 베이글", cat:"빵", emoji:"🥯", price:2800, desc:"쫀득하게 삶아 구운 든든한 아침 베이글.", tag:"품절", price2:0, soldout:true, bg:"#eddcb6" },
+];
+const CATS = ["전체","빵","케이크","디저트","음료"];
+const won = n => n.toLocaleString("ko-KR") + "원";
+
+function Header({count, onCart, onToast}){
+  const [open,setOpen] = useState(false);
+  const links = [["메뉴","#menu"],["우리 이야기","#story"],["예약·찾아오기","#reserve"]];
+  return (
+    <header className="site">
+      <div className="wrap nav">
+        <a href="#top" className="brand"><span className="mark">🥖</span>밀과달</a>
+        <nav className={open?"open":""} onClick={()=>setOpen(false)}>
+          {links.map(([t,h])=><a key={h} href={h}>{t}</a>)}
+        </nav>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <button className="cart-btn" onClick={onCart}>
+            🧺 장바구니 {count>0 && <span className="cart-count">{count}</span>}
+          </button>
+          <button className="menu-toggle" onClick={()=>setOpen(o=>!o)}>☰</button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Hero(){
+  return (
+    <section className="hero" id="top">
+      <div className="wrap">
+        <div>
+          <span className="eyebrow">연남동 골목 · 매일 아침 6시 오픈</span>
+          <h1>오늘도 갓 구운 빵으로<br/><em>동네의 아침</em>을 엽니다</h1>
+          <p className="lead">밀과달은 우리밀과 천연 발효종으로 매일 조금씩만 굽는
+            작은 동네 빵집입니다. 화학 첨가물 없이, 시간과 정성으로 부풀린 빵을 만나보세요.</p>
+          <div className="hero-cta">
+            <a href="#menu" className="btn btn-pri">오늘의 빵 보기</a>
+            <a href="#reserve" className="btn btn-ghost">픽업 예약하기</a>
+          </div>
+        </div>
+        <div className="hero-card">
+          <div className="hero-photo"><div className="ph"></div></div>
+          <div className="badge-float b1">갓 구운 시간<strong>오전 8시 · 오후 3시</strong></div>
+          <div className="badge-float b2">⭐ 동네 단골 평점<strong>4.9 / 5.0</strong></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Menu({onAdd}){
+  const [cat,setCat] = useState("전체");
+  const list = PRODUCTS.filter(p => cat==="전체" || p.cat===cat);
+  return (
+    <section id="menu">
+      <div className="wrap">
+        <div className="sec-head">
+          <span className="eyebrow">Today's Bake</span>
+          <h2>오늘의 메뉴</h2>
+          <p>매일 굽는 양이 달라요. 원하는 빵은 미리 예약해 두시면 따뜻하게 준비해 둘게요.</p>
+        </div>
+        <div className="filters">
+          {CATS.map(c=>(
+            <button key={c} className={"chip"+(cat===c?" active":"")} onClick={()=>setCat(c)}>{c}</button>
+          ))}
+        </div>
+        <div className="grid">
+          {list.map(p=>(
+            <article key={p.id} className={"card"+(p.soldout?" soldout":"")}>
+              <div className="thumb" style={{background:p.bg}}>
+                {p.tag && <span className="tag">{p.tag}</span>}
+                {p.emoji}
+              </div>
+              <div className="body">
+                <h3>{p.name}</h3>
+                <p className="desc">{p.desc}</p>
+                <div className="row">
+                  <span className="price">{p.soldout?"오늘 품절":won(p.price)}</span>
+                  <button className="add" disabled={p.soldout}
+                    onClick={()=>!p.soldout && onAdd(p)}>
+                    {p.soldout?"내일 만나요":"담기 +"}
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Story(){
+  const tiles=["🌾","🔥","🧑‍🍳","🥐"];
+  return (
+    <section className="story" id="story">
+      <div className="wrap">
+        <div>
+          <span className="eyebrow">Our Story</span>
+          <h2>13년째, 같은 자리에서<br/>같은 마음으로 굽습니다</h2>
+          <p>2013년 연남동 작은 골목에서 화덕 하나로 시작했어요. 매일 새벽 4시,
+            반죽이 부푸는 소리와 함께 하루가 시작됩니다.</p>
+          <p>좋은 빵은 좋은 재료에서 나온다고 믿어요. 그래서 우리밀, 무염 버터,
+            제철 과일만 고집합니다. 어제 못 판 빵은 동네 경로당에 나눠요.</p>
+          <div className="stats">
+            <div><strong>13년</strong><span>한 자리에서</span></div>
+            <div><strong>40여 종</strong><span>매일 굽는 빵</span></div>
+            <div><strong>100%</strong><span>국산 우리밀</span></div>
+          </div>
+        </div>
+        <div className="story-visual">
+          {tiles.map((t,i)=><div className="tile" key={i}>{t}</div>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Reserve({onToast}){
+  const empty = { name:"", phone:"", date:"", time:"10:00", people:"1", note:"" };
+  const [form,setForm] = useState(empty);
+  const [errors,setErrors] = useState({});
+  const [done,setDone] = useState(false);
+  const [list,setList] = useState(()=>{
+    try { return JSON.parse(localStorage.getItem("mdl_res")||"[]"); } catch(e){ return []; }
+  });
+  useEffect(()=>{ localStorage.setItem("mdl_res", JSON.stringify(list)); },[list]);
+
+  const set = (k,v)=>{ setForm(f=>({...f,[k]:v})); setErrors(e=>({...e,[k]:""})); setDone(false); };
+
+  const validate = () => {
+    const e = {};
+    if(!form.name.trim()) e.name = "성함을 입력해 주세요.";
+    if(!/^01[0-9][- ]?\d{3,4}[- ]?\d{4}$/.test(form.phone.trim())) e.phone = "올바른 휴대폰 번호를 입력해 주세요.";
+    if(!form.date) e.date = "픽업 날짜를 선택해 주세요.";
+    else if(form.date < today) e.date = "오늘 이후 날짜를 선택해 주세요.";
+    return e;
+  };
+  const today = new Date().toISOString().split("T")[0];
+
+  const submit = (ev) => {
+    ev.preventDefault();
+    const e = validate();
+    setErrors(e);
+    if(Object.keys(e).length) return;
+    const rec = { id:Date.now(), ...form };
+    setList(l=>[rec,...l]);
+    setForm(empty); setDone(true);
+    onToast(`${rec.name}님, ${rec.date} ${rec.time} 픽업 예약이 접수됐어요!`);
+  };
+  const remove = id => setList(l=>l.filter(r=>r.id!==id));
+
+  return (
+    <section className="reserve" id="reserve">
+      <div className="wrap">
+        <div>
+          <span className="eyebrow">Visit & Reserve</span>
+          <h2 style={{fontSize:"2rem",color:"var(--crust)",marginBottom:14}}>찾아오는 길</h2>
+          <p style={{color:"var(--crust-soft)",marginBottom:8}}>인기 빵은 오전에 금세 동나요.
+            픽업 예약을 남겨 주시면 따뜻하게 챙겨 둘게요.</p>
+          <ul className="info-list">
+            <li><span className="ic">📍</span><div><strong>서울 마포구 연남로 23길 12</strong><span>2호선 홍대입구역 3번 출구 도보 7분</span></div></li>
+            <li><span className="ic">🕖</span><div><strong>매일 07:00 – 21:00</strong><span>매주 화요일 정기 휴무</span></div></li>
+            <li><span className="ic">📞</span><div><strong>02-123-4567</strong><span>전화 예약도 환영합니다</span></div></li>
+            <li><span className="ic">🚗</span><div><strong>건물 뒤편 주차 2대</strong><span>인근 공영주차장 도보 2분</span></div></li>
+          </ul>
+        </div>
+
+        <form className="book" onSubmit={submit} noValidate>
+          {done && <div className="ok-msg">✅ 예약이 접수되었습니다. 매장에서 만나요!</div>}
+          <div className="field">
+            <label>성함</label>
+            <input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="홍길동" />
+            {errors.name && <div className="err">{errors.name}</div>}
+          </div>
+          <div className="field">
+            <label>휴대폰 번호</label>
+            <input value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="010-1234-5678" />
+            {errors.phone && <div className="err">{errors.phone}</div>}
+          </div>
+          <div className="two">
+            <div className="field">
+              <label>픽업 날짜</label>
+              <input type="date" min={today} value={form.date} onChange={e=>set("date",e.target.value)} />
+              {errors.date && <div className="err">{errors.date}</div>}
+            </div>
+            <div className="field">
+              <label>시간</label>
+              <select value={form.time} onChange={e=>set("time",e.target.value)}>
+                {["08:00","10:00","12:00","14:00","16:00","18:00"].map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field">
+            <label>인원 / 수량</label>
+            <select value={form.people} onChange={e=>set("people",e.target.value)}>
+              {["1","2","3","4","5명 이상"].map(p=><option key={p} value={p}>{p}{p==="5명 이상"?"":"개"}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>요청사항 <span style={{color:"#b3a487",fontWeight:400}}>(선택)</span></label>
+            <textarea value={form.note} onChange={e=>set("note",e.target.value)} placeholder="예) 소금빵 5개 따뜻하게 부탁드려요" />
+          </div>
+          <button type="submit" className="btn btn-pri" style={{width:"100%"}}>예약 신청하기</button>
+
+          {list.length>0 && (
+            <div className="submitted-list">
+              <h4>내 예약 내역 ({list.length})</h4>
+              {list.map(r=>(
+                <div className="res-item" key={r.id}>
+                  <span>📅 {r.date} {r.time} · {r.name} ({r.people})</span>
+                  <button onClick={()=>remove(r.id)}>취소</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </form>
+      </div>
+    </section>
+  );
+}
+
+function CartDrawer({open,onClose,items,inc,dec}){
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+  const [ordered,setOrdered] = useState(false);
+  useEffect(()=>{ if(open) setOrdered(false); },[open]);
+  return (
+    <React.Fragment>
+      <div className={"overlay"+(open?" open":"")} onClick={onClose}></div>
+      <aside className={"drawer"+(open?" open":"")}>
+        <div className="dh"><h3>🧺 내 장바구니</h3><button onClick={onClose}>×</button></div>
+        <div className="items">
+          {items.length===0 ? (
+            <div className="empty"><div className="em">🥐</div>아직 담은 빵이 없어요.<br/>오늘의 메뉴를 둘러보세요!</div>
+          ) : items.map(i=>(
+            <div className="ci" key={i.id}>
+              <span className="em">{i.emoji}</span>
+              <div className="meta"><strong>{i.name}</strong><span>{won(i.price)}</span></div>
+              <div className="qty">
+                <button onClick={()=>dec(i.id)}>−</button>
+                <span>{i.qty}</span>
+                <button onClick={()=>inc(i.id)}>+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="foot">
+          <div className="total"><span>합계</span><span>{won(total)}</span></div>
+          {ordered
+            ? <div className="ok-msg" style={{marginBottom:0}}>🎉 주문이 접수됐어요! 매장에서 픽업해 주세요.</div>
+            : <button className="btn btn-pri" disabled={items.length===0}
+                style={{opacity:items.length===0?.5:1}}
+                onClick={()=>setOrdered(true)}>주문 확정하기</button>}
+        </div>
+      </aside>
+    </React.Fragment>
+  );
+}
+
+function App(){
+  const [cart,setCart] = useState([]);
+  const [drawer,setDrawer] = useState(false);
+  const [toast,setToast] = useState("");
+  const timer = useRef(null);
+
+  const showToast = msg => {
+    setToast(msg);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(()=>setToast(""), 2800);
+  };
+  const add = p => {
+    setCart(c=>{
+      const f = c.find(i=>i.id===p.id);
+      if(f) return c.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i);
+      return [...c,{...p,qty:1}];
+    });
+    showToast(`${p.name}을(를) 장바구니에 담았어요 🧺`);
+  };
+  const inc = id => setCart(c=>c.map(i=>i.id===id?{...i,qty:i.qty+1}:i));
+  const dec = id => setCart(c=>c.flatMap(i=> i.id===id ? (i.qty>1?[{...i,qty:i.qty-1}]:[]) : [i]));
+  const count = cart.reduce((s,i)=>s+i.qty,0);
+
+  return (
+    <React.Fragment>
+      <Header count={count} onCart={()=>setDrawer(true)} />
+      <Hero/>
+      <Menu onAdd={add}/>
+      <Story/>
+      <Reserve onToast={showToast}/>
+      <footer className="site">
+        <div className="wrap">
+          <div className="top">
+            <div>
+              <div className="brand" style={{marginBottom:12}}><span className="mark">🥖</span>밀과달</div>
+              <p style={{maxWidth:280,fontSize:".9rem"}}>매일 새벽, 우리밀과 천연 발효종으로
+                정성껏 굽는 동네 빵집입니다.</p>
+            </div>
+            <div className="cols">
+              <div>
+                <h5>바로가기</h5>
+                <a href="#menu">메뉴</a><a href="#story">우리 이야기</a><a href="#reserve">예약·찾아오기</a>
+              </div>
+              <div>
+                <h5>매장 정보</h5>
+                <p>서울 마포구 연남로23길 12</p><p>매일 07:00 – 21:00</p><p>화요일 정기 휴무</p>
+              </div>
+              <div>
+                <h5>소식 받기</h5>
+                <p>@milgwadal_bakery</p><p>02-123-4567</p><p>hello@milgwadal.kr</p>
+              </div>
+            </div>
+          </div>
+          <div className="copy">© 2026 밀과달 베이커리 · 오늘도 따뜻한 하루 되세요 🤍</div>
+        </div>
+      </footer>
+      <CartDrawer open={drawer} onClose={()=>setDrawer(false)} items={cart} inc={inc} dec={dec}/>
+      <div className={"toast"+(toast?" show":"")}>{toast}</div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
